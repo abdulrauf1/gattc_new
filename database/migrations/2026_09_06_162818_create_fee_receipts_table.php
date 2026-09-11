@@ -1,31 +1,44 @@
 <?php
 
-namespace App\Models;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
-class FeeReceipt extends Model
+return new class extends Migration
 {
-    protected $fillable = [
-        'fee_payment_id',
-        'receipt_no',
-        'issued_at',
-        'issued_by',
-        'remarks',
-    ];
-
-    protected $casts = [
-        'issued_at' => 'datetime',
-    ];
-
-    public function payment(): BelongsTo
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
-        return $this->belongsTo(FeePayment::class, 'fee_payment_id');
+        Schema::create('fee_receipts', function (Blueprint $table) {
+            $table->id();
+
+            $table->foreignId('fee_payment_id')
+                ->unique()
+                ->constrained('fee_payments')
+                ->cascadeOnDelete();
+
+            $table->string('receipt_no')->unique();
+
+            $table->dateTime('issued_at');
+
+            $table->foreignId('issued_by')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+
+            $table->text('remarks')->nullable();
+
+            $table->timestamps();
+        });
     }
 
-    public function issuedBy(): BelongsTo
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
-        return $this->belongsTo(User::class, 'issued_by');
+        Schema::dropIfExists('fee_receipts');
     }
-}
+};

@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Str;
+
 
 class Course extends Model
 {
@@ -28,6 +31,15 @@ class Course extends Model
         'featured' => 'boolean',
         'status' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Course $course) {
+            if (empty($course->slug)) {
+                $course->slug = Str::slug($course->title);
+            }
+        });
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -55,6 +67,14 @@ class Course extends Model
         return $this->hasMany(
             Admission::class
         );
+    }
+
+    public function admissionSessions(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            AdmissionSession::class,
+            'admission_session_course'
+        )->withTimestamps();
     }
 
     public function feeConfigurations(): HasMany

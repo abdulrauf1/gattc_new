@@ -36,6 +36,14 @@ class AdmissionSession extends Model
         );
     }
 
+    public function courses(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Course::class,
+            'admission_session_course'
+        )->withTimestamps();
+    }
+
     public function isCurrentlyOpen(): bool
     {
         return $this->is_open

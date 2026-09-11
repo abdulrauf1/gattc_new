@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
           $this->call([
             FeeTypeSeeder::class,
             BankAccountSeeder::class,
+            AdminUserSeeder::class,
         ]);
 
         User::factory()->create([
