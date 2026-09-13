@@ -1,40 +1,83 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\AdmissionSessionController;
 use App\Http\Controllers\Admin\BankAccountController;
 use App\Http\Controllers\Admin\FeeConfigurationController;
 use App\Http\Controllers\Admin\FeeTypeController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PublicController;
+use App\Http\Controllers\PublicAdmissionController;
+
 
 /*
 |--------------------------------------------------------------------------
-| Public Routes
+| Public Website
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
+Route::get('/', [PublicController::class, 'home'])->name('home');
+
+Route::get('/courses', [PublicController::class, 'courses'])
+    ->name('public.courses');
+
+Route::get('/facilities', [PublicController::class, 'facilities'])
+    ->name('public.facilities');
+
+Route::get('/gallery', [PublicController::class, 'gallery'])
+    ->name('public.gallery');
+
+Route::get('/events', [PublicController::class, 'events'])
+    ->name('public.events');
+
+Route::get('/announcements', [PublicController::class, 'announcements'])
+    ->name('public.announcements');
+
+Route::get('/alumni', [PublicController::class, 'alumni'])
+    ->name('public.alumni');
+
+Route::get('/alumni/register', [PublicController::class, 'alumniRegister'])
+    ->name('public.alumni.register');
+
+Route::post('/alumni/register', [PublicController::class, 'storeAlumni'])
+    ->name('public.alumni.store');
+
+Route::get('/contact', [PublicController::class, 'contact'])
+    ->name('public.contact');
+
+Route::post('/contact', [PublicController::class, 'submitContact'])
+    ->name('public.contact.submit');
+
+
+
+Route::get('/apply-online', [
+    PublicAdmissionController::class,
+    'create',
+])->name('public.admission');
+
+Route::post('/apply-online', [
+    PublicAdmissionController::class,
+    'store',
+])->name('public.admission.store');
+
+Route::get('/apply-online/voucher/{voucher}', [
+    PublicAdmissionController::class,
+    'voucher',
+])->name('public.admission.voucher');
 
 
 /*
 |--------------------------------------------------------------------------
-| Authenticated User Routes
+| Authentication
 |--------------------------------------------------------------------------
 */
 
 Route::get('/dashboard', function () {
     return redirect()->route('admin.dashboard');
-})->middleware(['auth'])->name('dashboard');
-
-// Route::get('/dashboard', function () {
-//     return view('dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware('auth')->name('dashboard');
 
 Route::middleware('auth')->group(function () {
-
     Route::get('/profile', [ProfileController::class, 'edit'])
         ->name('profile.edit');
 
@@ -44,7 +87,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])
         ->name('profile.destroy');
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -56,29 +98,10 @@ Route::middleware(['auth'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-
-        /*
-        |--------------------------------------------------------------------------
-        | Admin Dashboard
-        |--------------------------------------------------------------------------
-        */
-
-        // Route::get('/', function () {
-        //     return view('admin.dashboard');
-        // })->name('dashboard');
         Route::get('/', [DashboardController::class, 'index'])
             ->name('dashboard');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Admission Sessions
-        |--------------------------------------------------------------------------
-        */
-
-        Route::resource(
-            'admission-sessions',
-            AdmissionSessionController::class
-        );
+        Route::resource('admission-sessions', AdmissionSessionController::class);
 
         Route::post(
             'admission-sessions/{admissionSession}/open',
@@ -90,42 +113,9 @@ Route::middleware(['auth'])
             [AdmissionSessionController::class, 'close']
         )->name('admission-sessions.close');
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Bank Accounts
-        |--------------------------------------------------------------------------
-        */
-
-        Route::resource(
-            'bank-accounts',
-            BankAccountController::class
-        );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Fee Types
-        |--------------------------------------------------------------------------
-        */
-
-        Route::resource(
-            'fee-types',
-            FeeTypeController::class
-        );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Fee Configurations
-        |--------------------------------------------------------------------------
-        */
-
-        Route::resource(
-            'fee-configurations',
-            FeeConfigurationController::class
-        );
-
+        Route::resource('bank-accounts', BankAccountController::class);
+        Route::resource('fee-types', FeeTypeController::class);
+        Route::resource('fee-configurations', FeeConfigurationController::class);
 
         Route::resource(
             'course-categories',
@@ -142,6 +132,5 @@ Route::middleware(['auth'])
             \App\Http\Controllers\Admin\CourseBatchController::class
         );
     });
-
 
 require __DIR__ . '/auth.php';

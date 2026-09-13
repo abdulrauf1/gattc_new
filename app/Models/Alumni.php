@@ -3,25 +3,32 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Alumni extends Model
 {
+ use HasFactory;
+
+    protected $table = 'alumnis';
+
     protected $fillable = [
         'name',
-        'course_id',
+        'email',
+        'phone',
+        'course',
         'graduation_year',
-        'current_position',
         'organization',
-        'testimonial',
+        'designation',
+        'bio',
         'photo',
-        'featured',
         'status',
     ];
 
     protected $casts = [
-        'featured' => 'boolean',
         'status' => 'boolean',
+        'graduation_year' => 'integer',
     ];
 
     /*

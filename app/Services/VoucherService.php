@@ -2,124 +2,67 @@
 
 namespace App\Services;
 
-use App\Models\Admission;
-use App\Models\FeeConfiguration;
-use App\Models\FeePaymentHistory;
+use App\Models\BankAccount;
 use App\Models\Voucher;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 class VoucherService
 {
-    public function __construct(
-        protected NumberService $numberService
-    ) {
-    }
+    public function createVoucher(array $data): Voucher
+    {
+        return DB::transaction(function () use ($data) {
+            $bankAccount = BankAccount::query()
+                ->active()
+                ->findOrFail($data['bank_account_id']);
 
-    public function generateForAdmission(
-        Admission $admission,
-        FeeConfiguration $configuration
-    ): Voucher {
-
-        return DB::transaction(function () use ($admission, $configuration) {
-
-            $session = $admission->session;
-
-            if (!$session) {
-                throw ValidationException::withMessages([
-                    'admission' => 'Admission session was not found.',
-                ]);
-            }
-
-            if (!$session->isCurrentlyOpen()) {
-                throw ValidationException::withMessages([
-                    'admission' => 'Admissions are currently closed.',
-                ]);
-            }
-
-            if (!$configuration->status) {
-                throw ValidationException::withMessages([
-                    'fee' => 'This fee configuration is inactive.',
-                ]);
-            }
-
-            /*
-             * Prevent duplicate active vouchers for
-             * the same admission and fee configuration.
-             */
-            $existing = Voucher::where('admission_id', $admission->id)
-                ->where('fee_configuration_id', $configuration->id)
-                ->whereIn('status', [
-                    'generated',
-                    'submitted',
-                ])
-                ->latest()
-                ->first();
-
-            if ($existing) {
-                return $existing;
-            }
-
-            $bankAccount = $configuration->bankAccount;
-
-            $voucherNo = $this->numberService->generate(
-                'voucher',
-                'GATTC-V'
-            );
+            $voucherNo = $this->generateVoucherNumber();
 
             $voucher = Voucher::create([
                 'voucher_no' => $voucherNo,
 
-                'fee_configuration_id' => $configuration->id,
+                'fee_configuration_id' => $data['fee_configuration_id'] ?? null,
+                'admission_session_id' => $data['admission_session_id'] ?? null,
+                'admission_id' => $data['admission_id'] ?? null,
+                'course_id' => $data['course_id'] ?? null,
+                'course_batch_id' => $data['course_batch_id'] ?? null,
 
-                'admission_id' => $admission->id,
+                'bank_account_id' => $bankAccount->id,
+                'voucher_category' => $data['voucher_category'],
 
-                'course_id' => $admission->course_id,
+                'applicant_name' => $data['applicant_name'],
+                'father_name' => $data['father_name'] ?? null,
+                'cnic' => $data['cnic'] ?? null,
+                'phone' => $data['phone'] ?? null,
 
-                'course_batch_id' => $admission->course_batch_id,
+                'amount' => $data['amount'],
+                'fee_details' => $data['fee_details'] ?? [],
 
-                'applicant_name' => $admission->full_name,
+                'issue_date' => $data['issue_date'] ?? now()->toDateString(),
+                'due_date' => $data['due_date'] ?? now()->addDays(7)->toDateString(),
 
-                'father_name' => $admission->father_name,
+                'status' => 'generated',
+                'remarks' => $data['remarks'] ?? null,
 
-                'cnic' => $admission->cnic,
-
-                'phone' => $admission->phone,
-
-                'amount' => $configuration->amount,
-
-                /*
-                 * Bank snapshot
-                 */
+                // Snapshot bank information
                 'bank_name' => $bankAccount->bank_name,
                 'account_title' => $bankAccount->account_title,
                 'account_number' => $bankAccount->account_number,
                 'iban' => $bankAccount->iban,
                 'branch_name' => $bankAccount->branch_name,
-
-                'issue_date' => now()->toDateString(),
-
-                'due_date' => now()
-                    ->addDays(7)
-                    ->toDateString(),
-
-                'status' => 'generated',
-            ]);
-
-            FeePaymentHistory::create([
-                'voucher_id' => $voucher->id,
-                'action' => 'voucher_generated',
-                'new_status' => 'generated',
-                'amount' => $voucher->amount,
-                'performed_by' => auth()->id(),
-                'remarks' => 'Fee voucher generated.',
-            ]);
-
-            $admission->update([
-                'admission_status' => 'fee_pending',
             ]);
 
             return $voucher;
         });
+    }
+
+    private function generateVoucherNumber(): string
+    {
+        do {
+            $number = 'GATTC-' . now()->format('Ym') . '-' .
+                strtoupper(Str::random(6));
+        } while (Voucher::where('voucher_no', $number)->exists());
+
+        return $number;
     }
 }

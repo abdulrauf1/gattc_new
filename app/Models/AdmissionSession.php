@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+
 class AdmissionSession extends Model
 {
     protected $fillable = [
@@ -49,5 +50,13 @@ class AdmissionSession extends Model
         return $this->is_open
             && now()->greaterThanOrEqualTo($this->opening_date)
             && now()->lessThanOrEqualTo($this->closing_date);
+    }
+
+    public function vouchers(): HasMany
+    {
+        return $this->hasMany(
+            Voucher::class,
+            'admission_session_id'
+        );
     }
 }

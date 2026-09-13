@@ -4,89 +4,74 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Voucher extends Model
 {
     protected $fillable = [
         'voucher_no',
         'fee_configuration_id',
+        'admission_session_id',
         'admission_id',
         'course_id',
         'course_batch_id',
+
+        'bank_account_id',
+        'voucher_category',
+
         'applicant_name',
         'father_name',
         'cnic',
         'phone',
-        'amount',
 
-        'bank_name',
-        'account_title',
-        'account_number',
-        'iban',
-        'branch_name',
+        'amount',
+        'fee_details',
 
         'issue_date',
         'due_date',
         'status',
         'remarks',
+
+        // Historical bank snapshot
+        'bank_name',
+        'account_title',
+        'account_number',
+        'iban',
+        'branch_name',
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
-
         'issue_date' => 'date',
-
         'due_date' => 'date',
+        'amount' => 'decimal:2',
+        'fee_details' => 'array',
     ];
 
-    /*
-    |--------------------------------------------------------------------------
-    | Admission / Application
-    |--------------------------------------------------------------------------
-    */
-
-    public function admission(): BelongsTo
+    public function bankAccount(): BelongsTo
     {
-        return $this->belongsTo(
-            Admission::class
-        );
+        return $this->belongsTo(BankAccount::class);
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Fee Configuration
-    |--------------------------------------------------------------------------
-    */
 
     public function feeConfiguration(): BelongsTo
     {
-        return $this->belongsTo(
-            FeeConfiguration::class
-        );
+        return $this->belongsTo(FeeConfiguration::class);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Course
-    |--------------------------------------------------------------------------
-    */
+    public function admissionSession(): BelongsTo
+    {
+        return $this->belongsTo(AdmissionSession::class);
+    }
+
+    public function admission(): BelongsTo
+    {
+        return $this->belongsTo(Admission::class);
+    }
 
     public function course(): BelongsTo
     {
-        return $this->belongsTo(
-            Course::class
-        );
+        return $this->belongsTo(Course::class);
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Course Batch
-    |--------------------------------------------------------------------------
-    */
-
-    public function batch(): BelongsTo
+    
+    public function courseBatch(): BelongsTo
     {
         return $this->belongsTo(
             CourseBatch::class,
@@ -94,7 +79,7 @@ class Voucher extends Model
         );
     }
 
-    /*
+       /*
     |--------------------------------------------------------------------------
     | Payment
     |--------------------------------------------------------------------------

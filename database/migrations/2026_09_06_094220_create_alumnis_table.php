@@ -12,23 +12,19 @@ return new class extends Migration
             $table->id();
 
             $table->string('name');
+            $table->string('email')->unique();
+            $table->string('phone');
 
-            $table->foreignId('course_id')
-                ->nullable()
-                ->constrained()
-                ->nullOnDelete();
+            $table->string('course');
+            $table->unsignedSmallInteger('graduation_year');
 
-            $table->string('graduation_year')->nullable();
-
-            $table->string('current_position')->nullable();
             $table->string('organization')->nullable();
+            $table->string('designation')->nullable();
 
-            $table->text('testimonial')->nullable();
-
+            $table->text('bio')->nullable();
             $table->string('photo')->nullable();
 
-            $table->boolean('featured')->default(false);
-            $table->boolean('status')->default(true);
+            $table->boolean('status')->default(false);
 
             $table->timestamps();
         });

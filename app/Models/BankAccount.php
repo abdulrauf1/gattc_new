@@ -23,10 +23,22 @@ class BankAccount extends Model
         'status' => 'boolean',
     ];
 
+    public function vouchers(): HasMany
+    {
+        return $this->hasMany(Voucher::class);
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', true);
+    }
+
+
     public function feeConfigurations(): HasMany
     {
         return $this->hasMany(
             FeeConfiguration::class
         );
     }
+
 }
