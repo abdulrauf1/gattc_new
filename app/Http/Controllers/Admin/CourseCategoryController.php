@@ -6,15 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\CourseCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 class CourseCategoryController extends Controller
 {
     public function index()
     {
         $categories = CourseCategory::withCount('courses')
-            ->latest()
-            ->paginate(15);
+            ->orderBy('name')
+            ->paginate(20);
 
         return view(
             'admin.course-categories.index',
@@ -30,19 +29,35 @@ class CourseCategoryController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:course_categories,name'],
-            'description' => ['nullable', 'string'],
-            'status' => ['nullable', 'boolean'],
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+            ],
+
+            'description' => [
+                'nullable',
+                'string',
+            ],
+
+            'status' => [
+                'nullable',
+                'boolean',
+            ],
         ]);
 
-        $validated['slug'] = Str::slug($validated['name']);
-        $validated['status'] = $request->boolean('status');
+        $validated['slug'] = $this->uniqueSlug(
+            $validated['name']
+        );
 
         CourseCategory::create($validated);
 
         return redirect()
             ->route('admin.course-categories.index')
-            ->with('success', 'Course category created successfully.');
+            ->with(
+                'success',
+                'Course category created successfully.'
+            );
     }
 
     public function edit(CourseCategory $courseCategory)
@@ -61,30 +76,44 @@ class CourseCategoryController extends Controller
             'name' => [
                 'required',
                 'string',
-                'max:255',
-                Rule::unique('course_categories', 'name')
-                    ->ignore($courseCategory->id),
+                'max:100',
             ],
-            'description' => ['nullable', 'string'],
-            'status' => ['nullable', 'boolean'],
+
+            'description' => [
+                'nullable',
+                'string',
+            ],
+
+            'status' => [
+                'nullable',
+                'boolean',
+            ],
         ]);
 
-        $validated['slug'] = Str::slug($validated['name']);
-        $validated['status'] = $request->boolean('status');
+        if ($courseCategory->name !== $validated['name']) {
+            $validated['slug'] = $this->uniqueSlug(
+                $validated['name'],
+                $courseCategory->id
+            );
+        }
 
         $courseCategory->update($validated);
 
         return redirect()
             ->route('admin.course-categories.index')
-            ->with('success', 'Course category updated successfully.');
+            ->with(
+                'success',
+                'Course category updated successfully.'
+            );
     }
 
-    public function destroy(CourseCategory $courseCategory)
-    {
+    public function destroy(
+        CourseCategory $courseCategory
+    ) {
         if ($courseCategory->courses()->exists()) {
             return back()->with(
                 'error',
-                'This category cannot be deleted because it contains courses.'
+                'This category cannot be deleted because courses are using it.'
             );
         }
 
@@ -94,5 +123,28 @@ class CourseCategoryController extends Controller
             'success',
             'Course category deleted successfully.'
         );
+    }
+
+    private function uniqueSlug(
+        string $name,
+        ?int $ignoreId = null
+    ): string {
+        $slug = Str::slug($name);
+        $original = $slug;
+        $counter = 1;
+
+        while (
+            CourseCategory::where('slug', $slug)
+                ->when(
+                    $ignoreId,
+                    fn ($q) =>
+                        $q->where('id', '!=', $ignoreId)
+                )
+                ->exists()
+        ) {
+            $slug = $original . '-' . $counter++;
+        }
+
+        return $slug;
     }
 }

@@ -46,10 +46,12 @@ class FeePaymentHistory extends Model
     |--------------------------------------------------------------------------
     */
 
-    public function feePayment(): BelongsTo
+
+    public function payment()
     {
         return $this->belongsTo(
-            FeePayment::class
+            FeePayment::class,
+            'fee_payment_id'
         );
     }
 

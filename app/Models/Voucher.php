@@ -4,61 +4,59 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Voucher extends Model
 {
     protected $fillable = [
         'voucher_no',
-        'fee_configuration_id',
         'admission_session_id',
-        'admission_id',
         'course_id',
-        'course_batch_id',
-
+        'admission_id',
         'bank_account_id',
-        'voucher_category',
+        'voucher_type',
 
         'applicant_name',
         'father_name',
         'cnic',
+        'date_of_birth',
+        'gender',
         'phone',
+        'email',
+        'address',
 
         'amount',
-        'fee_details',
-
         'issue_date',
         'due_date',
         'status',
         'remarks',
 
-        // Historical bank snapshot
         'bank_name',
         'account_title',
         'account_number',
         'iban',
         'branch_name',
+        'branch_code',
     ];
 
     protected $casts = [
+        'date_of_birth' => 'date',
         'issue_date' => 'date',
         'due_date' => 'date',
         'amount' => 'decimal:2',
-        'fee_details' => 'array',
     ];
 
-    public function bankAccount(): BelongsTo
+    public function session(): BelongsTo
     {
-        return $this->belongsTo(BankAccount::class);
+        return $this->belongsTo(
+            AdmissionSession::class,
+            'admission_session_id'
+        );
     }
 
-    public function feeConfiguration(): BelongsTo
+    public function course(): BelongsTo
     {
-        return $this->belongsTo(FeeConfiguration::class);
-    }
-
-    public function admissionSession(): BelongsTo
-    {
-        return $this->belongsTo(AdmissionSession::class);
+        return $this->belongsTo(Course::class);
     }
 
     public function admission(): BelongsTo
@@ -66,42 +64,13 @@ class Voucher extends Model
         return $this->belongsTo(Admission::class);
     }
 
-    public function course(): BelongsTo
+    public function bankAccount(): BelongsTo
     {
-        return $this->belongsTo(Course::class);
-    }
-    
-    public function courseBatch(): BelongsTo
-    {
-        return $this->belongsTo(
-            CourseBatch::class,
-            'course_batch_id'
-        );
+        return $this->belongsTo(BankAccount::class);
     }
 
-       /*
-    |--------------------------------------------------------------------------
-    | Payment
-    |--------------------------------------------------------------------------
-    */
-
-    public function feePayment(): HasOne
+    public function payment(): HasOne
     {
-        return $this->hasOne(
-            FeePayment::class
-        );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Payment History
-    |--------------------------------------------------------------------------
-    */
-
-    public function paymentHistories(): HasMany
-    {
-        return $this->hasMany(
-            FeePaymentHistory::class
-        );
+        return $this->hasOne(FeePayment::class);
     }
 }

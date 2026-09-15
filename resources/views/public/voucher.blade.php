@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
 
-    <title>Admission Fee Voucher - {{ $voucher->voucher_no }}</title>
+    <title>GATTC Fee Challan - {{ $voucher->voucher_no }}</title>
 
     <style>
         @page {
-            size: A4 portrait;
+            size: A4 landscape;
             margin: 8mm;
         }
 
@@ -17,144 +17,147 @@
 
         body {
             margin: 0;
-            background: #eeeeee;
-            color: #111111;
+            padding: 0;
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 10px;
+            color: #111;
+            background: #fff;
         }
 
-        .page {
-            width: 194mm;
-            margin: 0 auto;
-            background: #ffffff;
+        .voucher-page {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4mm;
         }
 
         .copy {
-            min-height: 88mm;
-            border: 1px solid #222222;
-            margin-bottom: 4mm;
-            padding: 5mm;
-            page-break-inside: avoid;
+            border: 1.5px solid #111;
+            min-height: 190mm;
+            padding: 4mm;
+            position: relative;
         }
 
-        .copy:last-child {
-            margin-bottom: 0;
+        .copy:not(:last-child) {
+            border-right: 1px dashed #555;
         }
 
         .copy-title {
             text-align: center;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: bold;
-            margin-bottom: 4px;
+            border-bottom: 1px solid #111;
+            padding-bottom: 3px;
+            margin-bottom: 5px;
         }
 
-        .authority {
+        .logo {
+            text-align: center;
+            margin-bottom: 3px;
+        }
+
+        .logo img {
+            width: 70px;
+            height: auto;
+        }
+
+        .college-name {
             text-align: center;
             font-size: 11px;
             font-weight: bold;
-            line-height: 1.35;
+            line-height: 1.2;
         }
 
-        .voucher-heading {
+        .challan-title {
             text-align: center;
             font-size: 13px;
             font-weight: bold;
-            margin: 4px 0 7px;
-            text-decoration: underline;
+            margin-top: 4px;
+            margin-bottom: 7px;
+            text-transform: uppercase;
         }
 
-        .top-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 3px 12px;
-            margin-bottom: 5px;
+        .voucher-no {
+            border: 1px solid #111;
+            padding: 4px;
+            text-align: center;
+            font-size: 10px;
+            margin-bottom: 6px;
         }
 
-        .field {
-            border-bottom: 1px dotted #555555;
-            min-height: 17px;
+        .section-title {
+            font-size: 9px;
+            font-weight: bold;
+            background: #eee;
+            border: 1px solid #111;
+            padding: 3px;
+            margin-top: 5px;
         }
 
-        .field strong {
+        .detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5px;
+        }
+
+        .detail-table td {
+            border: 1px solid #111;
+            padding: 3px;
+            vertical-align: top;
+        }
+
+        .label {
+            width: 40%;
             font-weight: bold;
         }
 
-        .bank-box {
-            border: 1px solid #222222;
-            padding: 4px;
-            margin-bottom: 5px;
+        .amount-box {
+            border: 2px solid #111;
+            margin-top: 8px;
+            padding: 6px;
+            text-align: center;
         }
 
-        .bank-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 3px 12px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 4px;
-        }
-
-        th,
-        td {
-            border: 1px solid #222222;
-            padding: 3px 4px;
-            height: 17px;
-        }
-
-        th {
-            text-align: left;
-            background: #f1f1f1;
+        .amount-label {
+            font-size: 9px;
+            font-weight: bold;
         }
 
         .amount {
-            width: 28%;
-            text-align: right;
-        }
-
-        .total-row td {
+            font-size: 18px;
             font-weight: bold;
-            font-size: 11px;
+            margin-top: 3px;
         }
 
-        .signatures {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 12px;
-            margin-top: 12px;
+        .instructions {
+            font-size: 7.5px;
+            line-height: 1.35;
+            margin-top: 8px;
+        }
+
+        .signature {
+            position: absolute;
+            bottom: 9mm;
+            left: 4mm;
+            right: 4mm;
+            display: flex;
+            justify-content: space-between;
+            font-size: 8px;
+        }
+
+        .signature div {
+            width: 45%;
             text-align: center;
+            border-top: 1px solid #111;
+            padding-top: 3px;
         }
 
-        .signature-line {
-            border-top: 1px solid #222222;
-            padding-top: 4px;
-        }
-
-        .footer-note {
-            margin-top: 5px;
-            font-size: 9px;
+        .footer {
+            position: absolute;
+            bottom: 3mm;
+            left: 4mm;
+            right: 4mm;
             text-align: center;
-        }
-
-        .checkbox {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border: 1px solid #222222;
-            margin: 0 3px;
-            vertical-align: middle;
-        }
-
-        .print-button {
-            display: block;
-            margin: 15px auto;
-            padding: 10px 20px;
-            background: #123b70;
-            color: white;
-            border: 0;
-            cursor: pointer;
+            font-size: 7px;
         }
 
         @media print {
@@ -162,273 +165,208 @@
                 background: white;
             }
 
-            .page {
-                width: 100%;
+            .voucher-page {
+                page-break-inside: avoid;
             }
 
-            .print-button {
-                display: none;
+            .no-print {
+                display: none !important;
             }
+        }
+
+        .print-button {
+            margin: 10px auto;
+            display: block;
+            padding: 10px 20px;
+            font-size: 15px;
+            cursor: pointer;
         }
     </style>
 </head>
 
 <body>
-    <button class="print-button" onclick="window.print()">
-        Print Voucher
-    </button>
 
-    <main class="page">
-        @foreach ([
-            "Student's Copy",
-            'Institute/Centre Copy',
-            "Bank's Copy"
-        ] as $copyTitle)
-            <section class="copy">
-                <div class="copy-title">
-                    Admission Fee Challan Receipt
-                    ({{ $copyTitle }})
-                </div>
+<button class="print-button no-print" onclick="window.print()">
+    Print Challan
+</button>
 
-                <div class="authority">
-                    KHYBER PAKHTUNKHWA<br>
-                    TECHNICAL EDUCATION & VOCATIONAL<br>
-                    TRAINING AUTHORITY
-                </div>
+<div class="voucher-page">
 
-                <div class="voucher-heading">
-                    GATTC HAYATABAD PESHAWAR
-                </div>
+    @foreach([
+        'BANK COPY',
+        'GATTC OFFICE COPY',
+        'APPLICANT COPY'
+    ] as $copy)
 
-                <div class="top-details">
-                    <div class="field">
-                        <strong>Receipt No:</strong>
-                        {{ $voucher->voucher_no }}
-                    </div>
+        <div class="copy">
 
-                    <div class="field">
-                        <strong>Dated:</strong>
+            <div class="copy-title">
+                {{ $copy }}
+            </div>
+
+            <div class="logo">
+                <img
+                    src="{{ asset('images/gattc-logo.png') }}"
+                    alt="GATTC Logo"
+                >
+            </div>
+
+            <div class="college-name">
+                Government Advance Technical Training Centre<br>
+                Hayatabad, Peshawar
+            </div>
+
+            <div class="challan-title">
+                Fee Challan
+            </div>
+
+            <div class="voucher-no">
+                <strong>Voucher No:</strong>
+                {{ $voucher->voucher_no }}
+            </div>
+
+            <div class="section-title">
+                APPLICANT INFORMATION
+            </div>
+
+            <table class="detail-table">
+                <tr>
+                    <td class="label">Applicant</td>
+                    <td>{{ $voucher->applicant_name }}</td>
+                </tr>
+
+                <tr>
+                    <td class="label">Father Name</td>
+                    <td>{{ $voucher->father_name }}</td>
+                </tr>
+
+                <tr>
+                    <td class="label">CNIC</td>
+                    <td>{{ $voucher->cnic }}</td>
+                </tr>
+
+                <tr>
+                    <td class="label">Phone</td>
+                    <td>{{ $voucher->phone }}</td>
+                </tr>
+            </table>
+
+            <div class="section-title">
+                FEE INFORMATION
+            </div>
+
+            <table class="detail-table">
+
+                <tr>
+                    <td class="label">Voucher Type</td>
+                    <td>
+                        {{ ucfirst($voucher->voucher_type) }}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="label">Course</td>
+                    <td>
+                        {{ $voucher->course?->title ?? 'Hostel Fee' }}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="label">Issue Date</td>
+                    <td>
                         {{ $voucher->issue_date?->format('d-m-Y') }}
-                    </div>
+                    </td>
+                </tr>
 
-                    <div class="field">
-                        <strong>Admission No:</strong>
-                        {{ $voucher->admission?->admission_no ?? '____________' }}
-                    </div>
+                <tr>
+                    <td class="label">Due Date</td>
+                    <td>
+                        {{ $voucher->due_date?->format('d-m-Y') }}
+                    </td>
+                </tr>
 
-                    <div class="field">
-                        <strong>Session:</strong>
-                        {{ $voucher->admissionSession?->name ?? '____________' }}
-                    </div>
+            </table>
 
-                    <div class="field">
-                        <strong>Shift:</strong>
-                        <span class="checkbox"></span> Morning
-                        <span class="checkbox"></span> Evening
-                    </div>
+            <div class="section-title">
+                BANK INFORMATION
+            </div>
 
-                    <div class="field">
-                        <strong>Category:</strong>
-                        {{ strtoupper(str_replace('_', ' ', $voucher->voucher_category)) }}
-                    </div>
+            <table class="detail-table">
+
+                <tr>
+                    <td class="label">Bank</td>
+                    <td>
+                        {{ $voucher->bank_name }}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="label">Account Title</td>
+                    <td>
+                        {{ $voucher->account_title }}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="label">Account No.</td>
+                    <td>
+                        {{ $voucher->account_number }}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="label">IBAN</td>
+                    <td>
+                        {{ $voucher->iban }}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="label">Branch</td>
+                    <td>
+                        {{ $voucher->branch_name }}
+                    </td>
+                </tr>
+
+            </table>
+
+            <div class="amount-box">
+                <div class="amount-label">
+                    TOTAL AMOUNT
                 </div>
 
-                <div class="bank-box">
-                    <div class="bank-grid">
-                        <div>
-                            <strong>Bank:</strong>
-                            {{ $voucher->bank_name }}
-                        </div>
+                <div class="amount">
+                    Rs. {{ number_format($voucher->amount, 2) }}
+                </div>
+            </div>
 
-                        <div>
-                            <strong>Branch:</strong>
-                            {{ $voucher->branch_name }}
-                        </div>
+            <div class="instructions">
+                <strong>Instructions:</strong><br>
+                1. Deposit the fee in the designated Bank of Khyber account.<br>
+                2. Keep the applicant copy safely.<br>
+                3. Submit/upload the paid bank copy for verification.<br>
+                4. Admission will be processed after payment verification.
+            </div>
 
-                        <div>
-                            <strong>Account Title:</strong>
-                            {{ $voucher->account_title }}
-                        </div>
-
-                        <div>
-                            <strong>Account No:</strong>
-                            {{ $voucher->account_number ?: '____________' }}
-                        </div>
-
-                        <div style="grid-column: 1 / -1;">
-                            <strong>IBAN:</strong>
-                            {{ $voucher->iban ?: '____________' }}
-                        </div>
-                    </div>
+            <div class="signature">
+                <div>
+                    Applicant Signature
                 </div>
 
-                <div class="top-details">
-                    <div class="field">
-                        <strong>Name of Institute:</strong>
-                        GATTC Hayatabad Peshawar
-                    </div>
-
-                    <div class="field">
-                        <strong>Institute Type:</strong>
-                        Vocational
-                    </div>
-
-                    <div class="field">
-                        <strong>Name of Student:</strong>
-                        {{ $voucher->applicant_name }}
-                    </div>
-
-                    <div class="field">
-                        <strong>CNIC/FORM-B:</strong>
-                        {{ $voucher->cnic }}
-                    </div>
-
-                    <div class="field">
-                        <strong>Contact No:</strong>
-                        {{ $voucher->phone }}
-                    </div>
-
-                    <div class="field">
-                        <strong>Father's Name:</strong>
-                        {{ $voucher->father_name }}
-                    </div>
-
-                    <div class="field">
-                        <strong>Trade/Technology:</strong>
-                        {{ $voucher->course?->name ?? '____________' }}
-                    </div>
-
-                    <div class="field">
-                        <strong>Class No:</strong>
-                        {{ $voucher->courseBatch?->name ?? '____________' }}
-                    </div>
-
-                    <div class="field">
-                        <strong>Qualification Type:</strong>
-                        <span class="checkbox"></span> CBT
-                        <span class="checkbox"></span> Traditional
-                    </div>
-
-                    <div class="field">
-                        <strong>Duration:</strong>
-                        {{ $voucher->course?->duration ?? '____________' }}
-                    </div>
+                <div>
+                    Bank / Office Stamp
                 </div>
+            </div>
 
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 8%;">S.No.</th>
-                            <th>Details of Deposit</th>
-                            <th class="amount">Amount Rs.</th>
-                        </tr>
-                    </thead>
+            <div class="footer">
+                GATTC Hayatabad Peshawar
+            </div>
 
-                    <tbody>
-                        <tr>
-                            <td>1</td>
-                            <td>Admission Fee</td>
-                            <td class="amount">
-                                {{ number_format($voucher->admission_fee, 2) }}
-                            </td>
-                        </tr>
+        </div>
 
-                        <tr>
-                            <td>2</td>
-                            <td>Tuition Fee</td>
-                            <td class="amount">
-                                {{ number_format($voucher->tuition_fee, 2) }}
-                            </td>
-                        </tr>
+    @endforeach
 
-                        <tr>
-                            <td>3</td>
-                            <td>Board Registration Fee</td>
-                            <td class="amount">
-                                {{ number_format($voucher->board_registration_fee, 2) }}
-                            </td>
-                        </tr>
+</div>
 
-                        <tr>
-                            <td>4</td>
-                            <td>Certificate Fee</td>
-                            <td class="amount">
-                                {{ number_format($voucher->certificate_fee, 2) }}
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td>5</td>
-                            <td>Examination Fee</td>
-                            <td class="amount">
-                                {{ number_format($voucher->examination_fee, 2) }}
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td>6</td>
-                            <td>Fine / Struck Off, If Any</td>
-                            <td class="amount">
-                                {{ number_format($voucher->fine_fee, 2) }}
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td>7</td>
-                            <td>Identity Card Fee</td>
-                            <td class="amount">
-                                {{ number_format($voucher->identity_card_fee, 2) }}
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td>8</td>
-                            <td>Miscellaneous Charges</td>
-                            <td class="amount">
-                                {{ number_format($voucher->miscellaneous_fee, 2) }}
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td>9</td>
-                            <td>Re-Admission Fee</td>
-                            <td class="amount">
-                                {{ number_format($voucher->readmission_fee, 2) }}
-                            </td>
-                        </tr>
-
-                        <tr class="total-row">
-                            <td colspan="2">TOTAL FEE</td>
-                            <td class="amount">
-                                Rs. {{ number_format($voucher->amount, 2) }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="signatures">
-                    <div class="signature-line">
-                        Depositor Sign
-                    </div>
-
-                    <div class="signature-line">
-                        Bank Officer
-                    </div>
-
-                    <div class="signature-line">
-                        Stamp & Sign
-                    </div>
-                </div>
-
-                <div class="footer-note">
-                    Due Date:
-                    {{ $voucher->due_date?->format('d-m-Y') }}
-                    |
-                    Voucher Category:
-                    {{ strtoupper(str_replace('_', ' ', $voucher->voucher_category)) }}
-                </div>
-            </section>
-        @endforeach
-    </main>
 </body>
 </html>

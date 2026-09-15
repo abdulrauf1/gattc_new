@@ -3,24 +3,30 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Course;
 use App\Models\AdmissionSession;
+use App\Models\Course;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AdmissionSessionController extends Controller
 {
     public function index()
     {
-        $sessions = AdmissionSession::latest()->paginate(10);
+        $sessions = AdmissionSession::withCount('courses')
+            ->latest('id')
+            ->paginate(20);
 
-        return view('admin.admission-sessions.index', compact('sessions'));
+        return view(
+            'admin.admission-sessions.index',
+            compact('sessions')
+        );
     }
 
     public function create()
     {
         $courses = Course::where('status', true)
-        ->orderBy('title')
-        ->get();
+            ->orderBy('title')
+            ->get();
 
         return view(
             'admin.admission-sessions.create',
@@ -30,29 +36,34 @@ class AdmissionSessionController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'session_code' => ['required', 'string', 'max:100', 'unique:admission_sessions,session_code'],
-            'opening_date' => ['required', 'date'],
-            'closing_date' => ['required', 'date', 'after:opening_date'],
-            'description' => ['nullable', 'string'],
-            'courses' => ['nullable', 'array'],
-            'courses.*' => ['exists:courses,id'],
-        ]);
+        $validated = $this->validateSession($request);
 
-        $courseIds = $validated['courses'] ?? [];
+        $courseIds = $request->input('courses', []);
 
-        unset($validated['courses']);
+        DB::transaction(function () use (
+            $validated,
+            $courseIds
+        ) {
+            $session = AdmissionSession::create($validated);
 
-        $validated['is_open'] = false;
+            $session->courses()->sync($courseIds);
 
-        $session = AdmissionSession::create($validated);
-
-        $session->courses()->sync($courseIds);
+            /*
+             * Automatically make this session the open session
+             * when requested.
+             */
+            if ($session->is_open) {
+                AdmissionSession::where('id', '!=', $session->id)
+                    ->update(['is_open' => false]);
+            }
+        });
 
         return redirect()
             ->route('admin.admission-sessions.index')
-            ->with('success', 'Admission session created successfully.');
+            ->with(
+                'success',
+                'Admission session created successfully.'
+            );
     }
 
     public function edit(AdmissionSession $admissionSession)
@@ -62,52 +73,66 @@ class AdmissionSessionController extends Controller
             ->get();
 
         $selectedCourses = $admissionSession
-            ->courses
-            ->pluck('id')
+            ->courses()
+            ->pluck('courses.id')
             ->toArray();
 
         return view(
             'admin.admission-sessions.edit',
-            compact('admissionSession', 'courses', 'selectedCourses')
+            compact(
+                'admissionSession',
+                'courses',
+                'selectedCourses'
+            )
         );
     }
 
-    public function update(Request $request, AdmissionSession $admissionSession)
-    {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'session_code' => [
-                'required',
-                'string',
-                'max:100',
-                'unique:admission_sessions,session_code,' . $admissionSession->id,
-            ],
-            'opening_date' => ['required', 'date'],
-            'closing_date' => ['required', 'date', 'after:opening_date'],
-            'description' => ['nullable', 'string'],
-            'courses' => ['nullable', 'array'],
-            'courses.*' => ['exists:courses,id'],
-        ]);
+    public function update(
+        Request $request,
+        AdmissionSession $admissionSession
+    ) {
+        $validated = $this->validateSession($request);
 
-        $courseIds = $validated['courses'] ?? [];
+        $courseIds = $request->input('courses', []);
 
-        unset($validated['courses']);
+        DB::transaction(function () use (
+            $validated,
+            $courseIds,
+            $admissionSession
+        ) {
+            $admissionSession->update($validated);
 
-        $admissionSession->update($validated);
+            $admissionSession->courses()->sync($courseIds);
 
-        $admissionSession->courses()->sync($courseIds);
+            if ($admissionSession->is_open) {
+                AdmissionSession::where(
+                    'id',
+                    '!=',
+                    $admissionSession->id
+                )->update([
+                    'is_open' => false,
+                ]);
+            }
+        });
 
         return redirect()
             ->route('admin.admission-sessions.index')
-            ->with('success', 'Admission session updated successfully.');
+            ->with(
+                'success',
+                'Admission session updated successfully.'
+            );
     }
 
-    public function destroy(AdmissionSession $admissionSession)
-    {
-        if ($admissionSession->admissions()->exists()) {
+    public function destroy(
+        AdmissionSession $admissionSession
+    ) {
+        if (
+            $admissionSession->admissions()->exists() ||
+            $admissionSession->vouchers()->exists()
+        ) {
             return back()->with(
                 'error',
-                'This admission session cannot be deleted because applications already exist.'
+                'This admission session cannot be deleted because it has admissions or vouchers.'
             );
         }
 
@@ -119,39 +144,84 @@ class AdmissionSessionController extends Controller
         );
     }
 
-    /**
-     * Open admission session.
-     */
-    public function open(AdmissionSession $admissionSession)
-    {
-        /*
-         * Close all other sessions first.
-         */
-        AdmissionSession::where('id', '!=', $admissionSession->id)
-            ->update(['is_open' => false]);
+    public function open(
+        AdmissionSession $admissionSession
+    ) {
+        DB::transaction(function () use (
+            $admissionSession
+        ) {
+            AdmissionSession::where(
+                'id',
+                '!=',
+                $admissionSession->id
+            )->update([
+                'is_open' => false,
+            ]);
 
-        $admissionSession->update([
-            'is_open' => true,
-        ]);
+            $admissionSession->update([
+                'is_open' => true,
+            ]);
+        });
 
         return back()->with(
             'success',
-            'Admissions are now open for ' . $admissionSession->name . '.'
+            'Admission session opened successfully.'
         );
     }
 
-    /**
-     * Close admission session.
-     */
-    public function close(AdmissionSession $admissionSession)
-    {
+    public function close(
+        AdmissionSession $admissionSession
+    ) {
         $admissionSession->update([
             'is_open' => false,
         ]);
 
         return back()->with(
             'success',
-            'Admissions have been closed.'
+            'Admission session closed successfully.'
         );
+    }
+
+    private function validateSession(
+        Request $request
+    ): array {
+        return $request->validate([
+            'title' => [
+                'required',
+                'string',
+                'max:150',
+            ],
+
+            'opening_date' => [
+                'required',
+                'date',
+            ],
+
+            'closing_date' => [
+                'required',
+                'date',
+                'after_or_equal:opening_date',
+            ],
+
+            'description' => [
+                'nullable',
+                'string',
+            ],
+
+            'is_open' => [
+                'nullable',
+                'boolean',
+            ],
+
+            'courses' => [
+                'nullable',
+                'array',
+            ],
+
+            'courses.*' => [
+                'integer',
+                'exists:courses,id',
+            ],
+        ]);
     }
 }

@@ -11,63 +11,44 @@ return new class extends Migration
         Schema::create('admissions', function (Blueprint $table) {
             $table->id();
 
-            $table->string('application_no')->unique();
+            $table->string('admission_no')->unique();
+
+            $table->foreignId('admission_session_id')
+                ->constrained()
+                ->restrictOnDelete();
 
             $table->foreignId('course_id')
-                ->nullable()
                 ->constrained()
-                ->nullOnDelete();
+                ->restrictOnDelete();
 
-            $table->foreignId('course_batch_id')
-                ->nullable()
-                ->constrained()
-                ->nullOnDelete();
+            $table->string('student_name');
+            $table->string('father_name');
 
-            // Applicant information
-            $table->string('full_name');
-            $table->string('father_name')->nullable();
-
+            $table->string('cnic', 30);
             $table->date('date_of_birth')->nullable();
 
             $table->enum('gender', [
-                'male',
-                'female',
-                'other'
+                'Male',
+                'Female',
+                'Other',
             ])->nullable();
 
-            $table->string('cnic', 20)->nullable();
             $table->string('phone', 30);
             $table->string('email')->nullable();
 
-            // Address
             $table->text('address')->nullable();
-            $table->string('district')->nullable();
-            $table->string('tehsil')->nullable();
-
-            // Education
-            $table->string('qualification')->nullable();
-            $table->string('institute')->nullable();
-            $table->string('passing_year')->nullable();
-
-            // Documents
-            $table->string('photo')->nullable();
-            $table->string('cnic_front')->nullable();
-            $table->string('cnic_back')->nullable();
-            $table->string('qualification_document')->nullable();
 
             $table->enum('status', [
                 'pending',
-                'under_review',
                 'approved',
                 'rejected',
-                'enrolled'
             ])->default('pending');
 
             $table->text('remarks')->nullable();
 
-            $table->timestamp('submitted_at')->nullable();
-
             $table->timestamps();
+
+            $table->index('cnic');
         });
     }
 

@@ -18,9 +18,9 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
           $this->call([
             RolePermissionSeeder::class,
-            DummyDataSeeder::class,
-            FeeTypeSeeder::class,
-            BankAccountSeeder::class,
+            // DummyDataSeeder::class,
+            // FeeTypeSeeder::class,
+            // BankAccountSeeder::class,
             AdminUserSeeder::class,
         ]);
 

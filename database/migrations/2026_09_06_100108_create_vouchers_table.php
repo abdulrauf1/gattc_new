@@ -13,63 +13,35 @@ return new class extends Migration
 
             $table->string('voucher_no')->unique();
 
-            /*
-            |--------------------------------------------------------------------------
-            | Admission Session
-            |--------------------------------------------------------------------------
-            */
             $table->foreignId('admission_session_id')
-                ->constrained('admission_sessions')
-                ->restrictOnDelete();
-
-            /*
-            |--------------------------------------------------------------------------
-            | Fee Configuration
-            |--------------------------------------------------------------------------
-            */
-            $table->foreignId('fee_configuration_id')
-                ->constrained('fee_configurations')
-                ->restrictOnDelete();
-
-            /*
-            |--------------------------------------------------------------------------
-            | Admission
-            |--------------------------------------------------------------------------
-            |
-            | This remains null until the voucher payment is verified.
-            |
-            */
-            $table->foreignId('admission_id')
                 ->nullable()
-                ->constrained('admissions')
+                ->constrained()
                 ->nullOnDelete();
 
-            /*
-            |--------------------------------------------------------------------------
-            | Course Information
-            |--------------------------------------------------------------------------
-            */
             $table->foreignId('course_id')
                 ->nullable()
-                ->constrained('courses')
+                ->constrained()
                 ->nullOnDelete();
 
-            $table->foreignId('course_batch_id')
+            $table->foreignId('admission_id')
                 ->nullable()
-                ->constrained('course_batches')
+                ->constrained()
                 ->nullOnDelete();
 
-            /*
-            |--------------------------------------------------------------------------
-            | Applicant Information
-            |--------------------------------------------------------------------------
-            */
-            $table->string('applicant_name');
+            $table->foreignId('bank_account_id')
+                ->constrained()
+                ->restrictOnDelete();
 
+            $table->enum('voucher_type', [
+                'admission',
+                'hostel',
+                'readmission',
+            ]);
+
+            $table->string('applicant_name');
             $table->string('father_name')->nullable();
 
-            $table->string('cnic')->nullable();
-
+            $table->string('cnic', 30)->nullable();
             $table->date('date_of_birth')->nullable();
 
             $table->enum('gender', [
@@ -78,45 +50,38 @@ return new class extends Migration
                 'Other',
             ])->nullable();
 
-            $table->string('phone')->nullable();
-
+            $table->string('phone', 30)->nullable();
             $table->string('email')->nullable();
-
             $table->text('address')->nullable();
 
-            /*
-            |--------------------------------------------------------------------------
-            | Voucher Information
-            |--------------------------------------------------------------------------
-            */
-            $table->decimal('amount', 12, 2);
+            $table->decimal('amount', 10, 2);
 
             $table->date('issue_date');
-
             $table->date('due_date');
 
             $table->enum('status', [
                 'generated',
-                'submitted',
                 'paid',
-                'expired',
                 'cancelled',
             ])->default('generated');
 
             $table->text('remarks')->nullable();
 
+            /*
+             * Bank snapshot
+             * Keeps historical vouchers correct even if
+             * bank account details change later.
+             */
+            $table->string('bank_name')->nullable();
+            $table->string('account_title')->nullable();
+            $table->string('account_number')->nullable();
+            $table->string('iban')->nullable();
+            $table->string('branch_name')->nullable();
+            $table->string('branch_code')->nullable();
+
             $table->timestamps();
 
-            /*
-            |--------------------------------------------------------------------------
-            | Useful Indexes
-            |--------------------------------------------------------------------------
-            */
-            $table->index([
-                'admission_session_id',
-                'status',
-            ]);
-
+            $table->index('voucher_type');
             $table->index('cnic');
         });
     }

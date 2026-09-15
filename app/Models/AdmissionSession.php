@@ -3,14 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-
 
 class AdmissionSession extends Model
 {
     protected $fillable = [
-        'name',
-        'session_code',
+        'title',
         'opening_date',
         'closing_date',
         'is_open',
@@ -18,24 +17,10 @@ class AdmissionSession extends Model
     ];
 
     protected $casts = [
-        'opening_date' => 'datetime',
-        'closing_date' => 'datetime',
+        'opening_date' => 'date',
+        'closing_date' => 'date',
         'is_open' => 'boolean',
     ];
-
-    public function admissions(): HasMany
-    {
-        return $this->hasMany(
-            Admission::class
-        );
-    }
-
-    public function feeConfigurations(): HasMany
-    {
-        return $this->hasMany(
-            FeeConfiguration::class
-        );
-    }
 
     public function courses(): BelongsToMany
     {
@@ -45,18 +30,13 @@ class AdmissionSession extends Model
         )->withTimestamps();
     }
 
-    public function isCurrentlyOpen(): bool
+    public function admissions(): HasMany
     {
-        return $this->is_open
-            && now()->greaterThanOrEqualTo($this->opening_date)
-            && now()->lessThanOrEqualTo($this->closing_date);
+        return $this->hasMany(Admission::class);
     }
 
     public function vouchers(): HasMany
     {
-        return $this->hasMany(
-            Voucher::class,
-            'admission_session_id'
-        );
+        return $this->hasMany(Voucher::class);
     }
 }

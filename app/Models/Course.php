@@ -4,48 +4,30 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Support\Str;
-
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Course extends Model
 {
     protected $fillable = [
         'course_category_id',
+        'bank_account_id',
         'title',
         'slug',
-        'code',
-        'short_description',
+        'course_type',
         'description',
         'duration',
-        'qualification',
-        'fee',
+        'eligibility',
+        'fee_amount',
         'image',
-        'featured',
+        'sort_order',
         'status',
     ];
 
     protected $casts = [
-        'fee' => 'decimal:2',
-        'featured' => 'boolean',
+        'fee_amount' => 'decimal:2',
         'status' => 'boolean',
     ];
-
-    protected static function booted(): void
-    {
-        static::creating(function (Course $course) {
-            if (empty($course->slug)) {
-                $course->slug = Str::slug($course->title);
-            }
-        });
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Relationships
-    |--------------------------------------------------------------------------
-    */
 
     public function category(): BelongsTo
     {
@@ -55,18 +37,9 @@ class Course extends Model
         );
     }
 
-    public function batches(): HasMany
+    public function bankAccount(): BelongsTo
     {
-        return $this->hasMany(
-            CourseBatch::class
-        );
-    }
-
-    public function admissions(): HasMany
-    {
-        return $this->hasMany(
-            Admission::class
-        );
+        return $this->belongsTo(BankAccount::class);
     }
 
     public function admissionSessions(): BelongsToMany
@@ -77,24 +50,13 @@ class Course extends Model
         )->withTimestamps();
     }
 
-    public function feeConfigurations(): HasMany
+    public function admissions(): HasMany
     {
-        return $this->hasMany(
-            FeeConfiguration::class
-        );
+        return $this->hasMany(Admission::class);
     }
 
     public function vouchers(): HasMany
     {
-        return $this->hasMany(
-            Voucher::class
-        );
-    }
-
-    public function alumni(): HasMany
-    {
-        return $this->hasMany(
-            Alumni::class
-        );
+        return $this->hasMany(Voucher::class);
     }
 }

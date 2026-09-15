@@ -14,7 +14,6 @@ class BankAccount extends Model
         'branch_name',
         'branch_code',
         'iban',
-        'account_type',
         'purpose',
         'status',
     ];
@@ -23,22 +22,13 @@ class BankAccount extends Model
         'status' => 'boolean',
     ];
 
+    public function courses(): HasMany
+    {
+        return $this->hasMany(Course::class);
+    }
+
     public function vouchers(): HasMany
     {
         return $this->hasMany(Voucher::class);
     }
-
-    public function scopeActive($query)
-    {
-        return $query->where('status', true);
-    }
-
-
-    public function feeConfigurations(): HasMany
-    {
-        return $this->hasMany(
-            FeeConfiguration::class
-        );
-    }
-
 }

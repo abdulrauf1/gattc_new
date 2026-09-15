@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\BankAccount;
 use App\Models\Course;
 use App\Models\CourseCategory;
 use Illuminate\Http\Request;
@@ -13,31 +14,37 @@ class CourseController extends Controller
 {
     public function index(Request $request)
     {
-        $courses = Course::with('category')
-            ->withCount('batches')
-            ->when($request->search, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%");
-                });
-            })
-            ->when($request->course_category_id, function ($query, $categoryId) {
-                $query->where('course_category_id', $categoryId);
-            })
-            ->when($request->has('status') && $request->status !== '', function ($query) use ($request) {
-                $query->where('status', $request->status);
-            })
-            ->latest()
-            ->paginate(10);
+        $courses = Course::query()
+            ->with(['category', 'bankAccount'])
+            ->when(
+                $request->filled('search'),
+                function ($query) use ($request) {
+                    $search = $request->search;
 
-        $categories = CourseCategory::where('status', true)
-            ->orderBy('name')
-            ->get();
+                    $query->where(function ($q) use ($search) {
+                        $q->where('title', 'like', "%{$search}%")
+                            ->orWhere(
+                                'course_type',
+                                'like',
+                                "%{$search}%"
+                            );
+                    });
+                }
+            )
+            ->when(
+                $request->filled('type'),
+                fn ($query) =>
+                    $query->where(
+                        'course_type',
+                        $request->type
+                    )
+            )
+            ->orderBy('sort_order')
+            ->orderBy('title')
+            ->paginate(20)
+            ->withQueryString();
 
-        return view('admin.courses.index', compact(
-            'courses',
-            'categories'
-        ));
+        return view('admin.courses.index', compact('courses'));
     }
 
     public function create()
@@ -46,88 +53,23 @@ class CourseController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view(
-            'admin.courses.create',
-            compact('categories')
-        );
+        $bankAccounts = BankAccount::where('status', true)
+            ->orderBy('account_title')
+            ->get();
+
+        return view('admin.courses.create', compact(
+            'categories',
+            'bankAccounts'
+        ));
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'course_category_id' => [
-                'nullable',
-                'exists:course_categories,id',
-            ],
+        $validated = $this->validateCourse($request);
 
-            'title' => [
-                'required',
-                'string',
-                'max:255',
-            ],
-
-            'code' => [
-                'nullable',
-                'string',
-                'max:100',
-                'unique:courses,code',
-            ],
-
-            'short_description' => [
-                'nullable',
-                'string',
-                'max:1000',
-            ],
-
-            'description' => [
-                'nullable',
-                'string',
-            ],
-
-            'duration' => [
-                'nullable',
-                'string',
-                'max:100',
-            ],
-
-            'qualification' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-
-            'fee' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
-            'image' => [
-                'nullable',
-                'image',
-                'max:2048',
-            ],
-
-            'featured' => [
-                'nullable',
-                'boolean',
-            ],
-
-            'status' => [
-                'nullable',
-                'boolean',
-            ],
-        ]);
-
-        $validated['slug'] = Str::slug($validated['title']);
-        $validated['featured'] = $request->boolean('featured');
-        $validated['status'] = $request->boolean('status');
-
-        if ($request->hasFile('image')) {
-            $validated['image'] = $request
-                ->file('image')
-                ->store('courses', 'public');
-        }
+        $validated['slug'] = $this->uniqueSlug(
+            $validated['title']
+        );
 
         Course::create($validated);
 
@@ -142,38 +84,86 @@ class CourseController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view(
-            'admin.courses.edit',
-            compact('course', 'categories')
-        );
+        $bankAccounts = BankAccount::where('status', true)
+            ->orderBy('account_title')
+            ->get();
+
+        return view('admin.courses.edit', compact(
+            'course',
+            'categories',
+            'bankAccounts'
+        ));
     }
 
     public function update(Request $request, Course $course)
     {
-        $validated = $request->validate([
+        $validated = $this->validateCourse(
+            $request,
+            $course
+        );
+
+        /*
+         * Update slug only if title changed.
+         */
+        if ($course->title !== $validated['title']) {
+            $validated['slug'] = $this->uniqueSlug(
+                $validated['title'],
+                $course->id
+            );
+        }
+
+        $course->update($validated);
+
+        return redirect()
+            ->route('admin.courses.index')
+            ->with('success', 'Course updated successfully.');
+    }
+
+    public function destroy(Course $course)
+    {
+        if ($course->vouchers()->exists()) {
+            return back()->with(
+                'error',
+                'This course cannot be deleted because vouchers already exist for it.'
+            );
+        }
+
+        $course->delete();
+
+        return back()->with(
+            'success',
+            'Course deleted successfully.'
+        );
+    }
+
+    private function validateCourse(
+        Request $request,
+        ?Course $course = null
+    ): array {
+        return $request->validate([
             'course_category_id' => [
                 'nullable',
                 'exists:course_categories,id',
             ],
 
+            'bank_account_id' => [
+                'required',
+                'exists:bank_accounts,id',
+            ],
+
             'title' => [
                 'required',
                 'string',
-                'max:255',
+                'max:150',
             ],
 
-            'code' => [
-                'nullable',
-                'string',
-                'max:100',
-                Rule::unique('courses', 'code')
-                    ->ignore($course->id),
-            ],
-
-            'short_description' => [
-                'nullable',
-                'string',
-                'max:1000',
+            'course_type' => [
+                'required',
+                Rule::in([
+                    'regular',
+                    'dit',
+                    'private',
+                ]),
             ],
 
             'description' => [
@@ -187,27 +177,28 @@ class CourseController extends Controller
                 'max:100',
             ],
 
-            'qualification' => [
+            'eligibility' => [
+                'nullable',
+                'string',
+            ],
+
+            'fee_amount' => [
+                'required',
+                'numeric',
+                'min:0',
+                'max:99999999.99',
+            ],
+
+            'image' => [
                 'nullable',
                 'string',
                 'max:255',
             ],
 
-            'fee' => [
+            'sort_order' => [
                 'nullable',
-                'numeric',
+                'integer',
                 'min:0',
-            ],
-
-            'image' => [
-                'nullable',
-                'image',
-                'max:2048',
-            ],
-
-            'featured' => [
-                'nullable',
-                'boolean',
             ],
 
             'status' => [
@@ -215,45 +206,28 @@ class CourseController extends Controller
                 'boolean',
             ],
         ]);
-
-        $validated['slug'] = Str::slug($validated['title']);
-        $validated['featured'] = $request->boolean('featured');
-        $validated['status'] = $request->boolean('status');
-
-        if ($request->hasFile('image')) {
-            $validated['image'] = $request
-                ->file('image')
-                ->store('courses', 'public');
-        }
-
-        $course->update($validated);
-
-        return redirect()
-            ->route('admin.courses.index')
-            ->with('success', 'Course updated successfully.');
     }
 
-    public function destroy(Course $course)
-    {
-        if ($course->batches()->exists()) {
-            return back()->with(
-                'error',
-                'This course cannot be deleted because it has batches.'
-            );
+    private function uniqueSlug(
+        string $title,
+        ?int $ignoreId = null
+    ): string {
+        $slug = Str::slug($title);
+        $original = $slug;
+        $counter = 1;
+
+        while (
+            Course::where('slug', $slug)
+                ->when(
+                    $ignoreId,
+                    fn ($query) =>
+                        $query->where('id', '!=', $ignoreId)
+                )
+                ->exists()
+        ) {
+            $slug = $original . '-' . $counter++;
         }
 
-        if ($course->admissionSessions()->exists()) {
-            return back()->with(
-                'error',
-                'This course cannot be deleted because it is assigned to an admission session.'
-            );
-        }
-
-        $course->delete();
-
-        return back()->with(
-            'success',
-            'Course deleted successfully.'
-        );
+        return $slug;
     }
 }

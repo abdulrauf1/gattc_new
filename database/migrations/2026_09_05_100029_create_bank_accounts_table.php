@@ -12,20 +12,13 @@ return new class extends Migration
             $table->id();
 
             $table->string('account_title');
-
-            $table->string('account_number');
-
-            $table->string('bank_name');
-
+            $table->string('account_number')->nullable();
+            $table->string('bank_name')->default('Bank of Khyber');
             $table->string('branch_name')->nullable();
             $table->string('branch_code')->nullable();
-
             $table->string('iban')->nullable();
 
-            $table->string('account_type')->nullable();
-
-            $table->string('purpose')->nullable();
-
+            $table->string('purpose');
             $table->boolean('status')->default(true);
 
             $table->timestamps();

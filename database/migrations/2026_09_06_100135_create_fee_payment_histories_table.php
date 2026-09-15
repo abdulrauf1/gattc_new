@@ -11,26 +11,17 @@ return new class extends Migration
         Schema::create('fee_payment_histories', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('voucher_id')
+            $table->foreignId('fee_payment_id')
                 ->constrained()
                 ->cascadeOnDelete();
 
-            $table->foreignId('fee_payment_id')
+            $table->foreignId('user_id')
                 ->nullable()
                 ->constrained()
                 ->nullOnDelete();
 
-            $table->string('action');
-
             $table->string('old_status')->nullable();
-            $table->string('new_status')->nullable();
-
-            $table->decimal('amount', 12, 2)->nullable();
-
-            $table->foreignId('performed_by')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
+            $table->string('new_status');
 
             $table->text('remarks')->nullable();
 

@@ -16,22 +16,28 @@ return new class extends Migration
                 ->constrained('course_categories')
                 ->nullOnDelete();
 
+            $table->foreignId('bank_account_id')
+                ->constrained('bank_accounts')
+                ->restrictOnDelete();
+
             $table->string('title');
             $table->string('slug')->unique();
 
-            $table->string('code')->nullable()->unique();
+            $table->enum('course_type', [
+                'regular',
+                'dit',
+                'private',
+            ])->default('regular');
 
-            $table->text('short_description')->nullable();
-            $table->longText('description')->nullable();
-
+            $table->text('description')->nullable();
             $table->string('duration')->nullable();
-            $table->string('qualification')->nullable();
+            $table->text('eligibility')->nullable();
 
-            $table->decimal('fee', 10, 2)->nullable();
+            $table->decimal('fee_amount', 10, 2);
 
             $table->string('image')->nullable();
+            $table->integer('sort_order')->default(0);
 
-            $table->boolean('featured')->default(false);
             $table->boolean('status')->default(true);
 
             $table->timestamps();

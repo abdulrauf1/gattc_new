@@ -11,13 +11,10 @@ return new class extends Migration
         Schema::create('admission_sessions', function (Blueprint $table) {
             $table->id();
 
-            $table->string('name');
+            $table->string('title');
 
-            $table->string('session_code')
-                ->unique();
-
-            $table->dateTime('opening_date');
-            $table->dateTime('closing_date');
+            $table->date('opening_date');
+            $table->date('closing_date');
 
             $table->boolean('is_open')->default(false);
 

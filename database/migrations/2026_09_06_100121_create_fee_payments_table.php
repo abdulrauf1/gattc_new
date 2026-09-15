@@ -13,30 +13,17 @@ return new class extends Migration
 
             $table->foreignId('voucher_id')
                 ->constrained()
-                ->restrictOnDelete();
+                ->cascadeOnDelete();
 
-            $table->string('bank_transaction_no')->nullable();
-
-            $table->string('deposit_slip_no')->nullable();
+            $table->string('payment_slip');
 
             $table->date('payment_date')->nullable();
 
-            $table->decimal('amount', 12, 2);
-
-            $table->enum('payment_method', [
-                'bank',
-                'online',
-                'cash',
-                'other'
-            ])->default('bank');
-
             $table->enum('status', [
                 'pending',
-                'verified',
-                'rejected'
+                'approved',
+                'rejected',
             ])->default('pending');
-
-            $table->string('proof_document')->nullable();
 
             $table->foreignId('verified_by')
                 ->nullable()
