@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AdmissionSession extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'title',
         'opening_date',
@@ -17,26 +18,45 @@ class AdmissionSession extends Model
     ];
 
     protected $casts = [
-        'opening_date' => 'date',
-        'closing_date' => 'date',
+        'opening_date' => 'datetime',
+        'closing_date' => 'datetime',
         'is_open' => 'boolean',
     ];
 
-    public function courses(): BelongsToMany
+    /**
+     * Courses available in this admission session.
+     */
+    public function courses()
     {
         return $this->belongsToMany(
             Course::class,
-            'admission_session_course'
+            'admission_session_course',
+            'admission_session_id',
+            'course_id'
         )->withTimestamps();
     }
 
-    public function admissions(): HasMany
+    /**
+     * Admissions belonging to this session.
+     */
+    public function admissions()
     {
-        return $this->hasMany(Admission::class);
+        return $this->hasMany(
+            Admission::class,
+            'admission_session_id'
+        );
     }
 
-    public function vouchers(): HasMany
+    
+
+    /**
+     * Vouchers belonging to this session.
+     */
+    public function vouchers()
     {
-        return $this->hasMany(Voucher::class);
+        return $this->hasMany(
+            Voucher::class,
+            'admission_session_id'
+        );
     }
 }

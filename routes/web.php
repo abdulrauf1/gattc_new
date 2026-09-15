@@ -210,6 +210,18 @@ Route::post('/payment-submit', [
 |--------------------------------------------------------------------------
 */
 
+/*
+|--------------------------------------------------------------------------
+| Authenticated Dashboard
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/dashboard', function () {
+    return redirect()->route('admin.dashboard');
+})->middleware(['auth'])->name('dashboard');
+
+
+
 Route::middleware(['auth'])
     ->prefix('admin')
     ->name('admin.')
@@ -346,12 +358,15 @@ Route::middleware(['auth'])
             'index',
         ])->name('admissions.index');
 
-
         Route::get('/admissions/{admission}', [
             AdmissionController::class,
             'show',
         ])->name('admissions.show');
 
+        Route::patch('/admissions/{admission}/status', [
+            AdmissionController::class,
+            'updateStatus',
+        ])->name('admissions.status');
 
         /*
         |--------------------------------------------------------------------------

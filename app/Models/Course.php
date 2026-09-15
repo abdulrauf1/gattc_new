@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Course extends Model
 {
+    
     protected $fillable = [
         'course_category_id',
         'bank_account_id',
@@ -37,9 +38,12 @@ class Course extends Model
         );
     }
 
-    public function bankAccount(): BelongsTo
+    public function bankAccount()
     {
-        return $this->belongsTo(BankAccount::class);
+        return $this->belongsTo(
+            BankAccount::class,
+            'bank_account_id'
+        );
     }
 
     public function admissionSessions(): BelongsToMany
@@ -50,9 +54,12 @@ class Course extends Model
         )->withTimestamps();
     }
 
-    public function admissions(): HasMany
+    public function admissions()
     {
-        return $this->hasMany(Admission::class);
+        return $this->hasMany(
+            Admission::class,
+            'course_id'
+        );
     }
 
     public function vouchers(): HasMany

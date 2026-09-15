@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Voucher extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'voucher_no',
         'admission_session_id',
@@ -15,7 +16,6 @@ class Voucher extends Model
         'admission_id',
         'bank_account_id',
         'voucher_type',
-
         'applicant_name',
         'father_name',
         'cnic',
@@ -24,13 +24,13 @@ class Voucher extends Model
         'phone',
         'email',
         'address',
-
         'amount',
         'issue_date',
         'due_date',
         'status',
         'remarks',
 
+        // Bank snapshot
         'bank_name',
         'account_title',
         'account_number',
@@ -46,7 +46,13 @@ class Voucher extends Model
         'amount' => 'decimal:2',
     ];
 
-    public function session(): BelongsTo
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
+
+    public function session()
     {
         return $this->belongsTo(
             AdmissionSession::class,
@@ -54,23 +60,44 @@ class Voucher extends Model
         );
     }
 
-    public function course(): BelongsTo
+    public function course()
     {
         return $this->belongsTo(Course::class);
     }
 
-    public function admission(): BelongsTo
+    public function admission()
     {
         return $this->belongsTo(Admission::class);
     }
 
-    public function bankAccount(): BelongsTo
+    public function bankAccount()
     {
         return $this->belongsTo(BankAccount::class);
     }
 
-    public function payment(): HasOne
+    public function payment()
     {
         return $this->hasOne(FeePayment::class);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Helpers
+    |--------------------------------------------------------------------------
+    */
+
+    public function getVoucherTypeLabelAttribute(): string
+    {
+        return match ($this->voucher_type) {
+            'admission' => 'Admission',
+            'hostel' => 'Hostel',
+            'readmission' => 'Readmission',
+            default => ucfirst($this->voucher_type),
+        };
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return ucfirst($this->status);
     }
 }

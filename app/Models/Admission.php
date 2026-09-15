@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Admission extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'admission_no',
         'admission_session_id',
@@ -28,7 +29,7 @@ class Admission extends Model
         'date_of_birth' => 'date',
     ];
 
-    public function session(): BelongsTo
+    public function session()
     {
         return $this->belongsTo(
             AdmissionSession::class,
@@ -36,13 +37,28 @@ class Admission extends Model
         );
     }
 
-    public function course(): BelongsTo
+    public function course()
     {
         return $this->belongsTo(Course::class);
     }
 
-    public function vouchers(): HasMany
+    public function vouchers()
     {
-        return $this->hasMany(Voucher::class);
+        return $this->hasMany(
+            Voucher::class,
+            'admission_id'
+        );
+    }
+
+    public function payments()
+    {
+        return $this->hasManyThrough(
+            FeePayment::class,
+            Voucher::class,
+            'admission_id',
+            'voucher_id',
+            'id',
+            'id'
+        );
     }
 }
