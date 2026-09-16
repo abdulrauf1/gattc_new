@@ -7,46 +7,55 @@
 <div class="space-y-4">
 
     {{-- Header --}}
-    <div class="flex items-center justify-between">
+    <div>
+        <h1 class="text-xl font-bold text-gray-900">
+            Payment Verification
+        </h1>
 
-        <div>
-            <h1 class="text-xl font-bold text-gray-900">
-                Payment Verification
-            </h1>
-
-            <p class="text-xs text-gray-500 mt-1">
-                Physically verify deposited bank slips before finalizing admissions.
-            </p>
-        </div>
-
+        <p class="text-xs text-gray-500 mt-1">
+            Verify deposited bank slips against generated vouchers.
+        </p>
     </div>
 
 
     {{-- Statistics --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
 
         <div class="bg-white border rounded-xl px-4 py-3">
-            <p class="text-[11px] uppercase text-gray-400 font-semibold">
-                Total
+            <p class="text-[11px] uppercase font-semibold text-gray-400">
+                All Vouchers
             </p>
 
             <p class="text-xl font-bold text-gray-900">
-                {{ $totalPayments }}
+                {{ $totalVouchers }}
             </p>
         </div>
 
+
         <div class="bg-white border rounded-xl px-4 py-3">
-            <p class="text-[11px] uppercase text-gray-400 font-semibold">
+            <p class="text-[11px] uppercase font-semibold text-gray-400">
+                Not Submitted
+            </p>
+
+            <p class="text-xl font-bold text-gray-500">
+                {{ $notSubmitted }}
+            </p>
+        </div>
+
+
+        <div class="bg-white border rounded-xl px-4 py-3">
+            <p class="text-[11px] uppercase font-semibold text-gray-400">
                 Pending
             </p>
 
             <p class="text-xl font-bold text-amber-600">
-                {{ $pendingPayments }}
+                {{ $pendingVerification }}
             </p>
         </div>
 
+
         <div class="bg-white border rounded-xl px-4 py-3">
-            <p class="text-[11px] uppercase text-gray-400 font-semibold">
+            <p class="text-[11px] uppercase font-semibold text-gray-400">
                 Approved
             </p>
 
@@ -55,8 +64,9 @@
             </p>
         </div>
 
+
         <div class="bg-white border rounded-xl px-4 py-3">
-            <p class="text-[11px] uppercase text-gray-400 font-semibold">
+            <p class="text-[11px] uppercase font-semibold text-gray-400">
                 Rejected
             </p>
 
@@ -74,64 +84,158 @@
         <form method="GET"
               action="{{ route('admin.fee-payments.index') }}">
 
-            <div class="flex items-center gap-2">
+            <div class="flex flex-col lg:flex-row gap-2">
 
+                {{-- Search --}}
                 <div class="flex-1">
-                    <input
-                        type="text"
-                        name="search"
-                        value="{{ request('search') }}"
-                        placeholder="Search voucher, student, CNIC, slip or transaction..."
-                        class="w-full h-9 rounded-lg border
-                               border-gray-300 px-3 text-sm
-                               focus:border-blue-500
-                               focus:ring-1 focus:ring-blue-500">
+
+                    <div class="relative">
+
+                        <i data-lucide="search"
+                           class="absolute left-3 top-1/2
+                                  -translate-y-1/2
+                                  w-4 h-4 text-gray-400">
+                        </i>
+
+                        <input
+                            type="text"
+                            name="search"
+                            value="{{ request('search') }}"
+                            placeholder="Search voucher, student, CNIC or phone..."
+                            class="w-full h-9 rounded-lg
+                                   border border-gray-300
+                                   pl-9 pr-3 text-sm
+                                   focus:border-blue-500
+                                   focus:ring-1
+                                   focus:ring-blue-500">
+
+                    </div>
+
                 </div>
 
-                <div class="w-36">
+
+                {{-- Payment Status --}}
+                <div class="w-full lg:w-44">
+
                     <select
-                        name="status"
+                        name="payment_status"
                         class="w-full h-9 rounded-lg
                                border border-gray-300
                                px-3 text-sm">
 
                         <option value="">
-                            All Status
+                            All Payment Status
                         </option>
 
-                        <option value="pending"
-                            @selected(request('status') === 'pending')}>
-                            Pending
+                        <option
+                            value="not_submitted"
+                            @selected(
+                                request('payment_status') === 'not_submitted'
+                            )>
+                            Not Submitted
                         </option>
 
-                        <option value="approved"
-                            @selected(request('status') === 'approved')}>
+                        <option
+                            value="pending"
+                            @selected(
+                                request('payment_status') === 'pending'
+                            )>
+                            Pending Verification
+                        </option>
+
+                        <option
+                            value="approved"
+                            @selected(
+                                request('payment_status') === 'approved'
+                            )>
                             Approved
                         </option>
 
-                        <option value="rejected"
-                            @selected(request('status') === 'rejected')}>
+                        <option
+                            value="rejected"
+                            @selected(
+                                request('payment_status') === 'rejected'
+                            )>
                             Rejected
                         </option>
 
                     </select>
+
                 </div>
 
+
+                {{-- Type --}}
+                <div class="w-full lg:w-36">
+
+                    <select
+                        name="type"
+                        class="w-full h-9 rounded-lg
+                               border border-gray-300
+                               px-3 text-sm">
+
+                        <option value="">
+                            All Types
+                        </option>
+
+                        <option
+                            value="admission"
+                            @selected(
+                                request('type') === 'admission'
+                            )>
+                            Admission
+                        </option>
+
+                        <option
+                            value="hostel"
+                            @selected(
+                                request('type') === 'hostel'
+                            )>
+                            Hostel
+                        </option>
+
+                        <option
+                            value="readmission"
+                            @selected(
+                                request('type') === 'readmission'
+                            )>
+                            Readmission
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                {{-- Filter --}}
                 <button
                     type="submit"
                     class="h-9 px-4 rounded-lg
                            bg-emerald-500
                            hover:bg-emerald-600
-                           text-white text-sm font-semibold">
+                           text-white text-sm font-semibold
+                           inline-flex items-center
+                           justify-center gap-1.5">
+
+                    <i data-lucide="filter"
+                       class="w-4 h-4">
+                    </i>
 
                     Filter
 
                 </button>
 
+
+                {{-- Reset --}}
                 <a
-                    href="{{ route('admin.fee-payments.index') }}"
-                    class="h-9 w-9 rounded-lg bg-gray-100
-                           flex items-center justify-center">
+                    href="{{ route(
+                        'admin.fee-payments.index'
+                    ) }}"
+                    class="h-9 w-9 shrink-0
+                           rounded-lg
+                           bg-gray-100
+                           hover:bg-gray-200
+                           flex items-center
+                           justify-center">
 
                     <i data-lucide="rotate-ccw"
                        class="w-4 h-4 text-gray-600">
@@ -151,14 +255,14 @@
 
         <div class="overflow-x-auto">
 
-            <table class="w-full min-w-[1000px] text-sm">
+            <table class="w-full min-w-[1100px] text-sm">
 
                 <thead class="bg-gray-50 border-b">
 
                     <tr>
 
                         <th class="px-4 py-3 text-left">
-                            Payment
+                            Voucher
                         </th>
 
                         <th class="px-4 py-3 text-left">
@@ -166,15 +270,19 @@
                         </th>
 
                         <th class="px-4 py-3 text-left">
-                            Voucher
-                        </th>
-
-                        <th class="px-4 py-3 text-left">
                             Type
                         </th>
 
                         <th class="px-4 py-3 text-left">
+                            Course
+                        </th>
+
+                        <th class="px-4 py-3 text-left">
                             Amount
+                        </th>
+
+                        <th class="px-4 py-3 text-left">
+                            Payment
                         </th>
 
                         <th class="px-4 py-3 text-left">
@@ -189,115 +297,214 @@
 
                 </thead>
 
+
                 <tbody class="divide-y">
 
-                @forelse($payments as $payment)
+                @forelse($vouchers as $voucher)
 
                     @php
-                        $voucher = $payment->voucher;
+                        $payment = $voucher->payment;
                     @endphp
 
                     <tr class="hover:bg-gray-50">
 
+                        {{-- Voucher --}}
                         <td class="px-4 py-3">
 
-                            <div class="font-semibold">
-                                {{ $payment->deposit_slip_no ?: '—' }}
+                            <div class="font-semibold text-gray-900">
+                                {{ $voucher->voucher_no }}
                             </div>
 
-                            <div class="text-xs text-gray-500">
-                                {{ optional($payment->payment_date)->format('d M Y') }}
+                            @if($voucher->admission)
+                                <div class="text-[11px] text-gray-500">
+                                    {{ $voucher->admission->admission_no }}
+                                </div>
+                            @endif
+
+                        </td>
+
+
+                        {{-- Student --}}
+                        <td class="px-4 py-3">
+
+                            <div class="font-medium text-gray-900">
+                                {{ $voucher->applicant_name }}
+                            </div>
+
+                            <div class="text-[11px] text-gray-500">
+                                {{ $voucher->cnic }}
                             </div>
 
                         </td>
 
 
+                        {{-- Type --}}
                         <td class="px-4 py-3">
 
-                            <div class="font-medium">
-                                {{ $voucher?->applicant_name ?: '—' }}
-                            </div>
+                            @php
+                                $typeClass =
+                                    match ($voucher->voucher_type) {
+                                        'admission' =>
+                                            'bg-blue-50 text-blue-700',
 
-                            <div class="text-xs text-gray-500">
-                                {{ $voucher?->cnic ?: '—' }}
-                            </div>
+                                        'hostel' =>
+                                            'bg-purple-50 text-purple-700',
 
-                        </td>
+                                        'readmission' =>
+                                            'bg-amber-50 text-amber-700',
 
+                                        default =>
+                                            'bg-gray-100 text-gray-600',
+                                    };
+                            @endphp
 
-                        <td class="px-4 py-3">
+                            <span
+                                class="inline-flex
+                                       px-2 py-1 rounded-full
+                                       text-[11px] font-semibold
+                                       {{ $typeClass }}">
 
-                            <span class="font-semibold">
-                                {{ $voucher?->voucher_no ?: '—' }}
+                                {{ $voucher->voucher_type_label }}
+
                             </span>
 
                         </td>
 
 
+                        {{-- Course --}}
                         <td class="px-4 py-3">
 
-                            {{ $voucher?->voucher_type
-                                ? ucfirst($voucher->voucher_type)
-                                : '—'
+                            {{ $voucher->course?->title
+                                ?: (
+                                    $voucher->voucher_type === 'hostel'
+                                        ? 'Hostel Fee'
+                                        : '—'
+                                )
                             }}
 
                         </td>
 
 
+                        {{-- Amount --}}
                         <td class="px-4 py-3 font-semibold">
 
                             Rs.
                             {{ number_format(
-                                $payment->amount,
+                                $voucher->amount,
                                 0
                             ) }}
 
                         </td>
 
 
+                        {{-- Payment --}}
                         <td class="px-4 py-3">
 
-                            @php
-                                $statusClass = match ($payment->status) {
-                                    'approved' =>
-                                        'bg-emerald-50 text-emerald-700',
+                            @if(!$payment)
 
-                                    'rejected' =>
-                                        'bg-red-50 text-red-700',
+                                <span class="text-gray-400">
+                                    Not Submitted
+                                </span>
 
-                                    default =>
-                                        'bg-amber-50 text-amber-700',
-                                };
-                            @endphp
+                            @else
 
-                            <span
-                                class="inline-flex px-2.5 py-1
-                                       rounded-full text-xs
-                                       font-semibold
-                                       {{ $statusClass }}">
+                                <div class="font-medium">
 
-                                {{ ucfirst($payment->status) }}
+                                    {{ $payment->deposit_slip_no
+                                        ?: 'Slip Pending'
+                                    }}
 
-                            </span>
+                                </div>
+
+                                <div class="text-[11px] text-gray-500">
+
+                                    {{ optional(
+                                        $payment->payment_date
+                                    )->format('d M Y') }}
+
+                                </div>
+
+                            @endif
 
                         </td>
 
 
+                        {{-- Status --}}
+                        <td class="px-4 py-3">
+
+                            @if(!$payment)
+
+                                <span
+                                    class="inline-flex
+                                           px-2 py-1
+                                           rounded-full
+                                           bg-gray-100
+                                           text-gray-600
+                                           text-[11px]
+                                           font-semibold">
+                                    Not Submitted
+                                </span>
+
+                            @else
+
+                                @php
+                                    $statusClass =
+                                        match ($payment->status) {
+                                            'approved' =>
+                                                'bg-emerald-50 text-emerald-700',
+
+                                            'rejected' =>
+                                                'bg-red-50 text-red-700',
+
+                                            default =>
+                                                'bg-amber-50 text-amber-700',
+                                        };
+                                @endphp
+
+                                <span
+                                    class="inline-flex
+                                           px-2 py-1
+                                           rounded-full
+                                           text-[11px]
+                                           font-semibold
+                                           {{ $statusClass }}">
+
+                                    {{ ucfirst(
+                                        $payment->status
+                                    ) }}
+
+                                </span>
+
+                            @endif
+
+                        </td>
+
+
+                        {{-- Action --}}
                         <td class="px-4 py-3 text-right">
 
                             <a
                                 href="{{ route(
-                                    'admin.fee-payments.show',
-                                    $payment
+                                    'admin.fee-payments.voucher',
+                                    $voucher
                                 ) }}"
-                                class="inline-flex items-center
-                                       justify-center w-8 h-8
-                                       rounded-lg bg-gray-100
-                                       hover:bg-gray-200">
+                                class="inline-flex
+                                       items-center justify-center
+                                       h-8 px-3 rounded-lg
+                                       bg-gray-100
+                                       hover:bg-gray-200
+                                       text-gray-700 text-xs
+                                       font-semibold">
 
-                                <i data-lucide="eye"
-                                   class="w-4 h-4 text-gray-600">
-                                </i>
+                                @if(!$payment)
+                                    Enter Payment
+                                @elseif($payment->status === 'pending')
+                                    Verify
+                                @elseif($payment->status === 'rejected')
+                                    Review
+                                @else
+                                    View
+                                @endif
 
                             </a>
 
@@ -309,17 +516,19 @@
 
                     <tr>
 
-                        <td colspan="7"
+                        <td
+                            colspan="8"
                             class="px-6 py-12 text-center">
 
                             <i data-lucide="receipt-text"
-                               class="w-10 h-10 mx-auto
+                               class="w-10 h-10
+                                      mx-auto
                                       text-gray-300">
                             </i>
 
-                            <p class="mt-2 text-sm
-                                      text-gray-500">
-                                No payment records found.
+                            <p class="mt-2
+                                      text-sm text-gray-500">
+                                No vouchers found.
                             </p>
 
                         </td>
@@ -335,10 +544,10 @@
         </div>
 
 
-        @if($payments->hasPages())
+        @if($vouchers->hasPages())
 
             <div class="border-t px-4 py-3">
-                {{ $payments->links() }}
+                {{ $vouchers->links() }}
             </div>
 
         @endif
@@ -349,12 +558,15 @@
 
 @endsection
 
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
     if (window.lucide) {
         lucide.createIcons();
     }
+
 });
 </script>
 @endpush

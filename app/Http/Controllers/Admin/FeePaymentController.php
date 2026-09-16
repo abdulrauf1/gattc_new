@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Admission;
 use App\Models\FeePayment;
 use App\Models\FeePaymentHistory;
 use App\Models\FeeReceipt;
-use App\Models\StudentCard;
+use App\Models\Voucher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -16,19 +15,33 @@ class FeePaymentController extends Controller
 {
     /*
     |--------------------------------------------------------------------------
-    | Payment Verification List
+    | Payment Verification
+    |--------------------------------------------------------------------------
+    |
+    | IMPORTANT:
+    | Start from VOUCHERS, not fee_payments.
+    |
+    | This ensures every generated voucher appears:
+    | - Not Submitted
+    | - Pending
+    | - Approved
+    | - Rejected
+    |
     |--------------------------------------------------------------------------
     */
 
     public function index(Request $request)
     {
-        $query = FeePayment::query()
-            ->with([
-                'voucher.course',
-                'voucher.session',
-                'voucher.admission',
-            ])
-            ->latest('id');
+        $query =
+            Voucher::query()
+                ->with([
+                    'course',
+                    'session',
+                    'admission',
+                    'payment',
+                ])
+                ->latest('id');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -37,104 +50,106 @@ class FeePaymentController extends Controller
         */
 
         if ($request->filled('search')) {
-            $search = trim($request->search);
+
+            $search =
+                trim($request->search);
+
 
             $query->where(function ($q) use ($search) {
 
                 $q->where(
-                    'deposit_slip_no',
+                    'voucher_no',
                     'like',
                     "%{$search}%"
                 )
 
                 ->orWhere(
-                    'bank_transaction_no',
+                    'applicant_name',
                     'like',
                     "%{$search}%"
                 )
 
-                ->orWhereHas(
-                    'voucher',
-                    function ($voucher) use ($search) {
+                ->orWhere(
+                    'father_name',
+                    'like',
+                    "%{$search}%"
+                )
 
-                        $voucher
-                            ->where(
-                                'voucher_no',
-                                'like',
-                                "%{$search}%"
-                            )
-                            ->orWhere(
-                                'applicant_name',
-                                'like',
-                                "%{$search}%"
-                            )
-                            ->orWhere(
-                                'cnic',
-                                'like',
-                                "%{$search}%"
-                            )
-                            ->orWhere(
-                                'phone',
-                                'like',
-                                "%{$search}%"
-                            );
-                    }
+                ->orWhere(
+                    'cnic',
+                    'like',
+                    "%{$search}%"
+                )
+
+                ->orWhere(
+                    'phone',
+                    'like',
+                    "%{$search}%"
                 );
             });
         }
 
+
         /*
         |--------------------------------------------------------------------------
-        | Status Filter
+        | Payment status filter
         |--------------------------------------------------------------------------
         */
 
-        if ($request->filled('status')) {
+        if ($request->filled('payment_status')) {
+
+            $status =
+                $request->payment_status;
+
+
+            if ($status === 'not_submitted') {
+
+                $query->whereDoesntHave(
+                    'payment'
+                );
+
+            } else {
+
+                $query->whereHas(
+                    'payment',
+                    function ($payment) use ($status) {
+
+                        $payment->where(
+                            'status',
+                            $status
+                        );
+                    }
+                );
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Voucher type
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('type')) {
+
             $query->where(
-                'status',
-                $request->status
+                'voucher_type',
+                $request->type
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Voucher Type Filter
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-            $request->filled('type') &&
-            in_array(
-                $request->type,
-                [
-                    'admission',
-                    'hostel',
-                    'readmission',
-                ],
-                true
-            )
-        ) {
-            $query->whereHas(
-                'voucher',
-                function ($voucher) use ($request) {
-
-                    $voucher->where(
-                        'voucher_type',
-                        $request->type
-                    );
-                }
-            );
-        }
 
         /*
         |--------------------------------------------------------------------------
-        | Pagination
+        | Paginate
         |--------------------------------------------------------------------------
         */
 
-        $payments = $query
-            ->paginate(15)
-            ->withQueryString();
+        $vouchers =
+            $query
+                ->paginate(15)
+                ->withQueryString();
+
 
         /*
         |--------------------------------------------------------------------------
@@ -142,29 +157,62 @@ class FeePaymentController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $totalPayments = FeePayment::count();
+        $totalVouchers =
+            Voucher::count();
 
-        $pendingPayments = FeePayment::where(
-            'status',
-            'pending'
-        )->count();
 
-        $approvedPayments = FeePayment::where(
-            'status',
-            'approved'
-        )->count();
+        $notSubmitted =
+            Voucher::whereDoesntHave(
+                'payment'
+            )->count();
 
-        $rejectedPayments = FeePayment::where(
-            'status',
-            'rejected'
-        )->count();
+
+        $pendingVerification =
+            Voucher::whereHas(
+                'payment',
+                function ($payment) {
+
+                    $payment->where(
+                        'status',
+                        'pending'
+                    );
+                }
+            )->count();
+
+
+        $approvedPayments =
+            Voucher::whereHas(
+                'payment',
+                function ($payment) {
+
+                    $payment->where(
+                        'status',
+                        'approved'
+                    );
+                }
+            )->count();
+
+
+        $rejectedPayments =
+            Voucher::whereHas(
+                'payment',
+                function ($payment) {
+
+                    $payment->where(
+                        'status',
+                        'rejected'
+                    );
+                }
+            )->count();
+
 
         return view(
             'admin.fee-payments.index',
             compact(
-                'payments',
-                'totalPayments',
-                'pendingPayments',
+                'vouchers',
+                'totalVouchers',
+                'notSubmitted',
+                'pendingVerification',
                 'approvedPayments',
                 'rejectedPayments'
             )
@@ -174,25 +222,380 @@ class FeePaymentController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Show Payment Verification
+    | Show Voucher Payment Verification
     |--------------------------------------------------------------------------
     */
 
-    public function show(FeePayment $feePayment)
-    {
-        $feePayment->load([
-            'voucher.course.category',
-            'voucher.session',
-            'voucher.admission.studentCards',
-            'voucher.bankAccount',
-            'histories.user',
-            'receipt',
+    public function showVoucher(
+        Voucher $voucher
+    ) {
+        $voucher->load([
+            'course.category',
+            'session',
+            'admission',
+            'bankAccount',
+            'payment.histories.user',
+            'payment.receipt',
         ]);
+
+
+        $payment =
+            $voucher->payment;
+
+
+        $isHostel =
+            $voucher->voucher_type === 'hostel';
+
+
+        $isReadmission =
+            $voucher->voucher_type === 'readmission';
+
 
         return view(
             'admin.fee-payments.show',
-            compact('feePayment')
+            compact(
+                'voucher',
+                'payment',
+                'isHostel',
+                'isReadmission'
+            )
         );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Enter / Update Payment Details
+    |--------------------------------------------------------------------------
+    */
+
+    public function updateDetails(
+        Request $request,
+        Voucher $voucher
+    ) {
+        /*
+        |--------------------------------------------------------------------------
+        | Load existing payment
+        |--------------------------------------------------------------------------
+        */
+
+        $payment =
+            $voucher->payment;
+
+
+        $rules = [
+
+            'deposit_slip_no' => [
+                'required',
+                'string',
+                'max:100',
+            ],
+
+            'bank_transaction_no' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'payment_date' => [
+                'required',
+                'date',
+            ],
+
+            'amount' => [
+                'required',
+                'numeric',
+                'min:0.01',
+            ],
+
+            'payment_method' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
+
+            'remarks' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+        ];
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Payment slip
+        |--------------------------------------------------------------------------
+        |
+        | Required for first submission.
+        |
+        */
+
+        if (!$payment) {
+
+            $rules['payment_slip'] = [
+                'required',
+                'file',
+                'mimes:jpg,jpeg,png,pdf,webp',
+                'max:5120',
+            ];
+
+        } else {
+
+            $rules['payment_slip'] = [
+                'nullable',
+                'file',
+                'mimes:jpg,jpeg,png,pdf,webp',
+                'max:5120',
+            ];
+        }
+
+
+        $validated =
+            $request->validate($rules);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Amount must match voucher
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            (float) $validated['amount']
+            !==
+            (float) $voucher->amount
+        ) {
+
+            return back()
+                ->withInput()
+                ->withErrors([
+
+                    'amount' =>
+                        'The deposited amount must match the voucher amount of Rs. ' .
+                        number_format(
+                            $voucher->amount,
+                            2
+                        ),
+
+                ]);
+        }
+
+
+        DB::transaction(function () use (
+            $request,
+            $validated,
+            $voucher,
+            $payment
+        ) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Existing slip
+            |--------------------------------------------------------------------------
+            */
+
+            $slipPath =
+                $payment?->payment_slip;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | New uploaded slip
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                $request->hasFile(
+                    'payment_slip'
+                )
+            ) {
+
+                if (
+                    $slipPath &&
+                    Storage::disk('public')
+                        ->exists($slipPath)
+                ) {
+
+                    Storage::disk('public')
+                        ->delete($slipPath);
+                }
+
+
+                $slipPath =
+                    $request
+                        ->file(
+                            'payment_slip'
+                        )
+                        ->store(
+                            'payments/slips',
+                            'public'
+                        );
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Create payment if none exists
+            |--------------------------------------------------------------------------
+            */
+
+            if (!$payment) {
+
+                $payment =
+                    FeePayment::create([
+
+                        'voucher_id' =>
+                            $voucher->id,
+
+                        'deposit_slip_no' =>
+                            $validated['deposit_slip_no'],
+
+                        'bank_transaction_no' =>
+                            $validated['bank_transaction_no']
+                            ?? null,
+
+                        'payment_date' =>
+                            $validated['payment_date'],
+
+                        'amount' =>
+                            $validated['amount'],
+
+                        'payment_method' =>
+                            $validated['payment_method']
+                            ?? 'bank',
+
+                        'payment_slip' =>
+                            $slipPath,
+
+                        'status' =>
+                            'pending',
+
+                        'verified_at' =>
+                            null,
+
+                        'remarks' =>
+                            $validated['remarks']
+                            ?? 'Payment details submitted for verification.',
+                    ]);
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | History
+                |--------------------------------------------------------------------------
+                */
+
+                FeePaymentHistory::create([
+
+                    'fee_payment_id' =>
+                        $payment->id,
+
+                    'user_id' =>
+                        auth()->id(),
+
+                    'old_status' =>
+                        null,
+
+                    'new_status' =>
+                        'pending',
+
+                    'remarks' =>
+                        'Payment details entered/submitted for verification.',
+                ]);
+
+            } else {
+
+                /*
+                |--------------------------------------------------------------------------
+                | Existing payment update
+                |--------------------------------------------------------------------------
+                */
+
+                $oldStatus =
+                    $payment->status;
+
+
+                $payment->update([
+
+                    'deposit_slip_no' =>
+                        $validated['deposit_slip_no'],
+
+                    'bank_transaction_no' =>
+                        $validated['bank_transaction_no']
+                        ?? null,
+
+                    'payment_date' =>
+                        $validated['payment_date'],
+
+                    'amount' =>
+                        $validated['amount'],
+
+                    'payment_method' =>
+                        $validated['payment_method']
+                        ?? $payment->payment_method,
+
+                    'payment_slip' =>
+                        $slipPath,
+
+                    /*
+                    | Any correction requires
+                    | another verification.
+                    */
+
+                    'status' =>
+                        'pending',
+
+                    'verified_at' =>
+                        null,
+
+                    'remarks' =>
+                        $validated['remarks']
+                        ?? 'Payment details updated and returned for verification.',
+                ]);
+
+
+                FeePaymentHistory::create([
+
+                    'fee_payment_id' =>
+                        $payment->id,
+
+                    'user_id' =>
+                        auth()->id(),
+
+                    'old_status' =>
+                        $oldStatus,
+
+                    'new_status' =>
+                        'pending',
+
+                    'remarks' =>
+                        'Payment details updated and submitted for verification.',
+                ]);
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Voucher remains generated until payment approved
+            |--------------------------------------------------------------------------
+            */
+
+            $voucher->update([
+                'status' => 'generated',
+            ]);
+        });
+
+
+        return redirect()
+            ->route(
+                'admin.fee-payments.voucher',
+                $voucher
+            )
+            ->with(
+                'success',
+                'Payment details saved. Please physically verify the deposited slip before approving the payment.'
+            );
     }
 
 
@@ -200,164 +603,162 @@ class FeePaymentController extends Controller
     |--------------------------------------------------------------------------
     | Approve Payment
     |--------------------------------------------------------------------------
-    |
-    | This verifies the bank payment/slip.
-    |
-    | After approval:
-    | - Payment becomes approved
-    | - Voucher becomes paid
-    | - Payment history is recorded
-    | - Fee receipt is generated
-    |
-    | Admission/student-card finalization remains a separate step.
-    |
-    |--------------------------------------------------------------------------
     */
 
     public function approve(
         Request $request,
-        FeePayment $feePayment
+        Voucher $voucher
     ) {
-        $validated = $request->validate([
-            'remarks' => [
-                'nullable',
-                'string',
-                'max:1000',
-            ],
-        ]);
+        $payment =
+            $voucher->payment;
 
-        /*
-        |--------------------------------------------------------------------------
-        | Already approved
-        |--------------------------------------------------------------------------
-        */
 
-        if ($feePayment->status === 'approved') {
-            return redirect()
-                ->route(
-                    'admin.fee-payments.show',
-                    $feePayment
-                )
-                ->with(
-                    'success',
-                    'This payment has already been approved.'
-                );
-        }
+        if (!$payment) {
 
-        /*
-        |--------------------------------------------------------------------------
-        | Voucher Required
-        |--------------------------------------------------------------------------
-        */
-
-        $voucher = $feePayment->voucher;
-
-        if (!$voucher) {
             return back()->withErrors([
                 'payment' =>
-                    'This payment is not linked to a voucher.',
+                    'No payment has been submitted for this voucher.',
             ]);
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Amount Check
-        |--------------------------------------------------------------------------
-        |
-        | Prevent approving a payment that does not match the
-        | voucher amount.
-        |
-        */
 
         if (
-            (float) $feePayment->amount !==
-            (float) $voucher->amount
+            !$payment->deposit_slip_no
         ) {
+
             return back()->withErrors([
-                'amount' =>
-                    'The deposited amount does not match the voucher amount.',
+                'payment' =>
+                    'Deposit slip number is required.',
             ]);
         }
 
+
+        if (
+            !$payment->payment_date
+        ) {
+
+            return back()->withErrors([
+                'payment' =>
+                    'Payment date is required.',
+            ]);
+        }
+
+
+        if (
+            (float) $payment->amount <= 0
+        ) {
+
+            return back()->withErrors([
+                'payment' =>
+                    'A valid deposited amount is required.',
+            ]);
+        }
+
+
+        if (
+            !$payment->payment_slip
+        ) {
+
+            return back()->withErrors([
+                'payment' =>
+                    'Paid bank slip must be uploaded before approval.',
+            ]);
+        }
+
+
+        if (
+            (float) $payment->amount
+            !==
+            (float) $voucher->amount
+        ) {
+
+            return back()->withErrors([
+                'payment' =>
+                    'Deposited amount does not match the voucher amount.',
+            ]);
+        }
+
+
         /*
         |--------------------------------------------------------------------------
-        | Transaction
+        | Approve
         |--------------------------------------------------------------------------
         */
 
         DB::transaction(function () use (
             $request,
-            $feePayment,
+            $payment,
             $voucher
         ) {
 
             $oldStatus =
-                $feePayment->status;
+                $payment->status;
 
-            /*
-            |--------------------------------------------------------------------------
-            | Payment Status
-            |--------------------------------------------------------------------------
-            */
 
-            $feePayment->update([
-                'status' => 'approved',
+            $payment->update([
 
-                'verified_at' => now(),
+                'status' =>
+                    'approved',
+
+                'verified_at' =>
+                    now(),
 
                 'remarks' =>
-                    $request->input('remarks')
-                    ?: 'Payment slip physically verified and approved.',
+                    $request->input(
+                        'remarks'
+                    )
+                    ?: 'Paid bank slip physically verified and approved.',
             ]);
 
-            /*
-            |--------------------------------------------------------------------------
-            | Voucher Status
-            |--------------------------------------------------------------------------
-            */
 
             $voucher->update([
                 'status' => 'paid',
             ]);
 
+
+            FeePaymentHistory::create([
+
+                'fee_payment_id' =>
+                    $payment->id,
+
+                'user_id' =>
+                    auth()->id(),
+
+                'old_status' =>
+                    $oldStatus,
+
+                'new_status' =>
+                    'approved',
+
+                'remarks' =>
+                    $request->input(
+                        'remarks'
+                    )
+                    ?: 'Paid bank slip physically verified and approved.',
+            ]);
+
+
             /*
             |--------------------------------------------------------------------------
-            | Payment History
+            | Generate receipt
             |--------------------------------------------------------------------------
-            */
-
-            $this->recordHistory(
-                $feePayment,
-                $oldStatus,
-                'approved',
-                $request->input('remarks')
-                    ?: 'Payment slip physically verified and approved.'
-            );
-
-            /*
-            |--------------------------------------------------------------------------
-            | Generate Fee Receipt
-            |--------------------------------------------------------------------------
-            |
-            | A receipt is generated for every approved payment,
-            | including hostel payments.
-            |
             */
 
             $this->createFeeReceipt(
-                $feePayment,
+                $payment,
                 $voucher->voucher_type
             );
         });
 
+
         return redirect()
             ->route(
-                'admin.fee-payments.show',
-                $feePayment
+                'admin.fee-payments.voucher',
+                $voucher
             )
             ->with(
                 'success',
-                'Payment approved successfully. The voucher is now marked as paid.'
+                'Payment approved successfully. Continue to the Admissions page for admission verification and student-card generation.'
             );
     }
 
@@ -370,49 +771,43 @@ class FeePaymentController extends Controller
 
     public function reject(
         Request $request,
-        FeePayment $feePayment
+        Voucher $voucher
     ) {
-        $validated = $request->validate([
-            'remarks' => [
-                'required',
-                'string',
-                'max:1000',
-            ],
-        ]);
+        $payment =
+            $voucher->payment;
 
-        /*
-        |--------------------------------------------------------------------------
-        | Do not reject already-approved payment
-        |--------------------------------------------------------------------------
-        */
 
-        if ($feePayment->status === 'approved') {
+        if (!$payment) {
 
             return back()->withErrors([
                 'payment' =>
-                    'An approved payment cannot be rejected.',
+                    'No payment record exists for this voucher.',
             ]);
         }
 
-        $voucher =
-            $feePayment->voucher;
+
+        $validated =
+            $request->validate([
+                'remarks' => [
+                    'required',
+                    'string',
+                    'max:1000',
+                ],
+            ]);
+
 
         DB::transaction(function () use (
-            $feePayment,
+            $payment,
             $voucher,
             $validated
         ) {
 
             $oldStatus =
-                $feePayment->status;
+                $payment->status;
 
-            /*
-            |--------------------------------------------------------------------------
-            | Payment Rejected
-            |--------------------------------------------------------------------------
-            */
 
-            $feePayment->update([
+            $payment->update([
+
                 'status' =>
                     'rejected',
 
@@ -423,36 +818,42 @@ class FeePaymentController extends Controller
                     $validated['remarks'],
             ]);
 
-            /*
-            |--------------------------------------------------------------------------
-            | Voucher remains/generated again for correction
-            |--------------------------------------------------------------------------
-            */
-
-            if ($voucher) {
-                $voucher->update([
-                    'status' => 'generated',
-                ]);
-            }
 
             /*
             |--------------------------------------------------------------------------
-            | History
+            | Voucher becomes available for another submission
             |--------------------------------------------------------------------------
             */
 
-            $this->recordHistory(
-                $feePayment,
-                $oldStatus,
-                'rejected',
-                $validated['remarks']
-            );
+            $voucher->update([
+                'status' => 'generated',
+            ]);
+
+
+            FeePaymentHistory::create([
+
+                'fee_payment_id' =>
+                    $payment->id,
+
+                'user_id' =>
+                    auth()->id(),
+
+                'old_status' =>
+                    $oldStatus,
+
+                'new_status' =>
+                    'rejected',
+
+                'remarks' =>
+                    $validated['remarks'],
+            ]);
         });
+
 
         return redirect()
             ->route(
-                'admin.fee-payments.show',
-                $feePayment
+                'admin.fee-payments.voucher',
+                $voucher
             )
             ->with(
                 'success',
@@ -463,452 +864,7 @@ class FeePaymentController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Finalize Admission
-    |--------------------------------------------------------------------------
-    |
-    | This is the second step after payment verification.
-    |
-    | Admission:
-    |   - creates admission if needed
-    |   - generates admission number if missing
-    |   - requires photo
-    |   - approves admission
-    |   - generates student card
-    |
-    | Readmission:
-    |   - existing admission is retained
-    |   - existing admission number is retained
-    |   - requires a fresh student photo
-    |   - creates a new student card
-    |
-    | Hostel:
-    |   - no admission number
-    |   - no student card
-    |
-    |--------------------------------------------------------------------------
-    */
-
-    public function finalizeAdmission(
-        Request $request,
-        FeePayment $feePayment
-    ) {
-        /*
-        |--------------------------------------------------------------------------
-        | Load required relationships
-        |--------------------------------------------------------------------------
-        */
-
-        $feePayment->load([
-            'voucher.course',
-            'voucher.session',
-            'voucher.admission',
-        ]);
-
-        $voucher =
-            $feePayment->voucher;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Voucher check
-        |--------------------------------------------------------------------------
-        */
-
-        if (!$voucher) {
-
-            return back()->withErrors([
-                'payment' =>
-                    'No voucher is attached to this payment.',
-            ]);
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Payment must be approved
-        |--------------------------------------------------------------------------
-        */
-
-        if ($feePayment->status !== 'approved') {
-
-            return back()->withErrors([
-                'payment' =>
-                    'Payment must be approved before finalizing the admission.',
-            ]);
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Voucher must be paid
-        |--------------------------------------------------------------------------
-        */
-
-        if ($voucher->status !== 'paid') {
-
-            return back()->withErrors([
-                'payment' =>
-                    'Voucher is not marked as paid.',
-            ]);
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Voucher Type
-        |--------------------------------------------------------------------------
-        */
-
-        $voucherType =
-            $voucher->voucher_type;
-
-        /*
-        |--------------------------------------------------------------------------
-        | HOSTEL
-        |--------------------------------------------------------------------------
-        |
-        | Hostel is already complete after payment approval.
-        |
-        */
-
-        if ($voucherType === 'hostel') {
-
-            return redirect()
-                ->route(
-                    'admin.fee-payments.show',
-                    $feePayment
-                )
-                ->with(
-                    'success',
-                    'Hostel payment has been verified. No admission number or student card is generated for a hostel-only voucher.'
-                );
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Student Photo Required
-        |--------------------------------------------------------------------------
-        */
-
-        $request->validate([
-            'student_photo' => [
-                'required',
-                'image',
-                'mimes:jpg,jpeg,png,webp',
-                'max:2048',
-            ],
-
-            'admission_remarks' => [
-                'nullable',
-                'string',
-                'max:1000',
-            ],
-        ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Process
-        |--------------------------------------------------------------------------
-        */
-
-        $result = DB::transaction(function () use (
-            $request,
-            $feePayment,
-            $voucher,
-            $voucherType
-        ) {
-
-            /*
-            |--------------------------------------------------------------------------
-            | Existing or New Admission
-            |--------------------------------------------------------------------------
-            */
-
-            $admission =
-                $voucher->admission;
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Create admission if missing
-            |--------------------------------------------------------------------------
-            |
-            | This supports public/legacy vouchers which were
-            | created without an admission record.
-            |
-            */
-
-            if (
-                $voucherType === 'admission'
-                && !$admission
-            ) {
-
-                $admission =
-                    Admission::create([
-
-                        /*
-                        | Temporarily generated immediately.
-                        */
-
-                        'admission_no' =>
-                            $this->generateAdmissionNo(),
-
-                        'admission_session_id' =>
-                            $voucher->admission_session_id,
-
-                        'course_id' =>
-                            $voucher->course_id,
-
-                        'student_name' =>
-                            $voucher->applicant_name,
-
-                        'father_name' =>
-                            $voucher->father_name,
-
-                        'cnic' =>
-                            $voucher->cnic,
-
-                        'date_of_birth' =>
-                            $voucher->date_of_birth,
-
-                        'gender' =>
-                            $voucher->gender,
-
-                        'phone' =>
-                            $voucher->phone,
-
-                        'email' =>
-                            $voucher->email,
-
-                        'address' =>
-                            $voucher->address,
-
-                        'status' =>
-                            'pending',
-
-                        'remarks' =>
-                            'Created after payment verification.',
-                    ]);
-
-                /*
-                |--------------------------------------------------------------------------
-                | Link admission to voucher
-                |--------------------------------------------------------------------------
-                */
-
-                $voucher->update([
-                    'admission_id' =>
-                        $admission->id,
-                ]);
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Admission is required
-            |--------------------------------------------------------------------------
-            */
-
-            if (!$admission) {
-
-                throw new \RuntimeException(
-                    'No admission record is available for this voucher.'
-                );
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Ensure Admission Number
-            |--------------------------------------------------------------------------
-            |
-            | This is important for admissions created by the
-            | previous voucher workflow without an admission number.
-            |
-            */
-
-            if (
-                empty($admission->admission_no)
-            ) {
-
-                $admission->update([
-                    'admission_no' =>
-                        $this->generateAdmissionNo(),
-                ]);
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Student Photo
-            |--------------------------------------------------------------------------
-            */
-
-            $photoPath =
-                $request
-                    ->file('student_photo')
-                    ->store(
-                        'students/photos',
-                        'public'
-                    );
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Determine Remarks
-            |--------------------------------------------------------------------------
-            */
-
-            $remarks =
-                $request->input(
-                    'admission_remarks'
-                );
-
-
-            if (!$remarks) {
-
-                $remarks =
-                    $voucherType === 'readmission'
-
-                    ? 'Readmission payment, application and student photo physically verified. Student card reissued.'
-
-                    : 'Payment, deposited slip, application and student photo physically verified. Admission finalized.';
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Finalize Admission
-            |--------------------------------------------------------------------------
-            */
-
-            $admission->update([
-
-                'student_photo' =>
-                    $photoPath,
-
-                'status' =>
-                    'approved',
-
-                'remarks' =>
-                    $remarks,
-            ]);
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Disable Previous Active Student Card
-            |--------------------------------------------------------------------------
-            |
-            | Particularly important for readmission.
-            |
-            */
-
-            StudentCard::query()
-                ->where(
-                    'admission_id',
-                    $admission->id
-                )
-                ->where(
-                    'status',
-                    true
-                )
-                ->update([
-                    'status' => false,
-                    'remarks' =>
-                        'Superseded by newly issued student card.',
-                ]);
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Generate Card Number
-            |--------------------------------------------------------------------------
-            */
-
-            $cardNo =
-                $this->generateStudentCardNo();
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Create Student Card
-            |--------------------------------------------------------------------------
-            */
-
-            $studentCard =
-                StudentCard::create([
-
-                    'admission_id' =>
-                        $admission->id,
-
-                    'card_no' =>
-                        $cardNo,
-
-                    'photo' =>
-                        $photoPath,
-
-                    'issued_at' =>
-                        now()->toDateString(),
-
-                    'issued_by' =>
-                        auth()->id(),
-
-                    'status' =>
-                        true,
-
-                    'remarks' =>
-                        $voucherType === 'readmission'
-
-                            ? 'Student card reissued after readmission verification.'
-
-                            : 'Student card issued after admission verification.',
-                ]);
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Ensure Fee Receipt
-            |--------------------------------------------------------------------------
-            |
-            | approve() normally already creates it.
-            | This check makes finalization safe for older payments.
-            |
-            */
-
-            $this->createFeeReceipt(
-                $feePayment,
-                $voucherType
-            );
-
-
-            return [
-                'admission' =>
-                    $admission,
-
-                'studentCard' =>
-                    $studentCard,
-            ];
-        });
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Go directly to Student Card
-        |--------------------------------------------------------------------------
-        */
-
-        return redirect()
-            ->route(
-                'admin.student-cards.print',
-                $result['studentCard']
-            )
-            ->with(
-                'success',
-                'Admission finalized successfully. Admission number and student card have been generated.'
-            );
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Payment Slip
+    | View Uploaded Slip
     |--------------------------------------------------------------------------
     */
 
@@ -918,16 +874,20 @@ class FeePaymentController extends Controller
         $path =
             $feePayment->payment_slip;
 
+
         if (!$path) {
             abort(404);
         }
 
+
         $disk =
             Storage::disk('public');
+
 
         if (!$disk->exists($path)) {
             abort(404);
         }
+
 
         return $disk->response(
             $path
@@ -937,218 +897,23 @@ class FeePaymentController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Print Student Card
-    |--------------------------------------------------------------------------
-    */
-
-    public function printStudentCard(
-        StudentCard $studentCard
-    ) {
-        $studentCard->load([
-            'admission.course',
-            'admission.session',
-        ]);
-
-        return view(
-            'admin.student-cards.print',
-            compact('studentCard')
-        );
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Record Payment History
-    |--------------------------------------------------------------------------
-    */
-
-    private function recordHistory(
-        FeePayment $feePayment,
-        ?string $oldStatus,
-        string $newStatus,
-        string $remarks
-    ): void {
-        FeePaymentHistory::create([
-
-            'fee_payment_id' =>
-                $feePayment->id,
-
-            'user_id' =>
-                auth()->id(),
-
-            'old_status' =>
-                $oldStatus,
-
-            'new_status' =>
-                $newStatus,
-
-            'remarks' =>
-                $remarks,
-        ]);
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Generate Admission Number
-    |--------------------------------------------------------------------------
-    */
-
-    private function generateAdmissionNo(): string
-    {
-        $year =
-            now()->format('Y');
-
-
-        $lastAdmission =
-            Admission::query()
-                ->where(
-                    'admission_no',
-                    'like',
-                    'ADM-' . $year . '-%'
-                )
-                ->latest('id')
-                ->lockForUpdate()
-                ->first();
-
-
-        $number = 1;
-
-
-        if ($lastAdmission) {
-
-            $number =
-                ((int) substr(
-                    $lastAdmission->admission_no,
-                    -5
-                )) + 1;
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Extra duplicate protection
-        |--------------------------------------------------------------------------
-        */
-
-        do {
-
-            $admissionNo =
-                'ADM-' .
-                $year .
-                '-' .
-                str_pad(
-                    $number,
-                    5,
-                    '0',
-                    STR_PAD_LEFT
-                );
-
-            $exists =
-                Admission::where(
-                    'admission_no',
-                    $admissionNo
-                )->exists();
-
-            if ($exists) {
-                $number++;
-            }
-
-        } while ($exists);
-
-
-        return $admissionNo;
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Generate Student Card Number
-    |--------------------------------------------------------------------------
-    */
-
-    private function generateStudentCardNo(): string
-    {
-        $year =
-            now()->format('Y');
-
-
-        $lastCard =
-            StudentCard::query()
-                ->where(
-                    'card_no',
-                    'like',
-                    'STC-' . $year . '-%'
-                )
-                ->latest('id')
-                ->lockForUpdate()
-                ->first();
-
-
-        $number = 1;
-
-
-        if ($lastCard) {
-
-            $number =
-                ((int) substr(
-                    $lastCard->card_no,
-                    -5
-                )) + 1;
-        }
-
-
-        do {
-
-            $cardNo =
-                'STC-' .
-                $year .
-                '-' .
-                str_pad(
-                    $number,
-                    5,
-                    '0',
-                    STR_PAD_LEFT
-                );
-
-            $exists =
-                StudentCard::where(
-                    'card_no',
-                    $cardNo
-                )->exists();
-
-            if ($exists) {
-                $number++;
-            }
-
-        } while ($exists);
-
-
-        return $cardNo;
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Generate Fee Receipt
+    | Generate Receipt
     |--------------------------------------------------------------------------
     */
 
     private function createFeeReceipt(
-        FeePayment $feePayment,
+        FeePayment $payment,
         string $voucherType
     ): void {
 
         /*
-        |--------------------------------------------------------------------------
-        | Prevent Duplicate Receipt
-        |--------------------------------------------------------------------------
+        | Prevent duplicate receipt
         */
 
         if (
             FeeReceipt::where(
                 'fee_payment_id',
-                $feePayment->id
+                $payment->id
             )->exists()
         ) {
             return;
@@ -1197,11 +962,13 @@ class FeePaymentController extends Controller
                     STR_PAD_LEFT
                 );
 
+
             $exists =
                 FeeReceipt::where(
                     'receipt_no',
                     $receiptNo
                 )->exists();
+
 
             if ($exists) {
                 $number++;
@@ -1213,7 +980,7 @@ class FeePaymentController extends Controller
         FeeReceipt::create([
 
             'fee_payment_id' =>
-                $feePayment->id,
+                $payment->id,
 
             'receipt_no' =>
                 $receiptNo,

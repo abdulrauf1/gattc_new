@@ -24,6 +24,9 @@ return new class extends Migration
 
             $table->date('issued_at');
 
+            $table->date('expiry_date')
+                ->nullable();
+
             $table->foreignId('issued_by')
                 ->nullable()
                 ->constrained('users')

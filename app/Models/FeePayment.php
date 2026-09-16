@@ -11,8 +11,8 @@ class FeePayment extends Model
 
     protected $fillable = [
         'voucher_id',
-        'bank_transaction_no',
         'deposit_slip_no',
+        'bank_transaction_no',
         'payment_date',
         'amount',
         'payment_method',
@@ -39,14 +39,16 @@ class FeePayment extends Model
     public function histories()
     {
         return $this->hasMany(
-            FeePaymentHistory::class
+            FeePaymentHistory::class,
+            'fee_payment_id'
         );
     }
 
     public function receipt()
     {
         return $this->hasOne(
-            FeeReceipt::class
+            FeeReceipt::class,
+            'fee_payment_id'
         );
     }
 }

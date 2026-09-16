@@ -1,114 +1,141 @@
 @extends('layouts.admin')
 
-@section('title', 'Bank Accounts')
+@section('page-heading', 'Bank Accounts')
 
 @section('content')
 
-<div class="p-4 lg:p-6">
+<div class="space-y-4">
 
-    <div class="mb-6 flex items-center justify-between">
+    <div>
 
-        <div>
-            <h1 class="text-2xl font-bold">
-                Bank Accounts
-            </h1>
+        <h1 class="text-xl font-bold">
+            Bank Accounts
+        </h1>
 
-            <p class="mt-1 text-sm text-slate-500">
-                GATTC fee deposit accounts.
-            </p>
-        </div>
-
-        <a href="{{ route('admin.bank-accounts.create') }}"
-           class="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white">
-            + Add Account
-        </a>
+        <p class="text-xs text-gray-500 mt-1">
+            View GATTC Bank of Khyber receiving accounts. Account details are managed by authorized administration.
+        </p>
 
     </div>
 
 
-    <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
+    <div class="grid grid-cols-1
+                md:grid-cols-2
+                xl:grid-cols-4 gap-4">
 
         @forelse($bankAccounts as $account)
 
-            <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <div class="bg-white border
+                        rounded-xl overflow-hidden">
 
-                <div class="flex items-start justify-between">
+                <div class="p-4">
 
-                    <div>
+                    <div class="flex
+                                items-center
+                                justify-between">
 
-                        <h2 class="font-bold text-slate-800">
-                            {{ $account->account_title }}
-                        </h2>
+                        <span
+                            class="px-2 py-1 rounded-full
+                                   bg-emerald-50
+                                   text-emerald-700
+                                   text-[10px]
+                                   font-semibold">
 
-                        <p class="mt-1 text-sm text-slate-500">
-                            {{ $account->bank_name }}
-                        </p>
+                            {{ $account->status
+                                ? 'ACTIVE'
+                                : 'INACTIVE'
+                            }}
 
-                    </div>
-
-                    @if($account->status)
-                        <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                            Active
                         </span>
-                    @else
-                        <span class="rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">
-                            Inactive
-                        </span>
-                    @endif
 
-                </div>
+                        <i data-lucide="landmark"
+                           class="w-5 h-5
+                                  text-gray-400"></i>
 
-
-                <div class="mt-5 space-y-2 text-sm">
-
-                    <div>
-                        <span class="font-medium">Account:</span>
-                        {{ $account->account_number }}
                     </div>
 
-                    <div>
-                        <span class="font-medium">IBAN:</span>
-                        {{ $account->iban }}
-                    </div>
 
-                    <div>
-                        <span class="font-medium">Branch:</span>
-                        {{ $account->branch_name }}
-                        ({{ $account->branch_code }})
-                    </div>
+                    <p class="text-xs
+                              text-gray-500
+                              mt-4">
 
-                    <div>
-                        <span class="font-medium">Purpose:</span>
                         {{ $account->purpose }}
+
+                    </p>
+
+
+                    <h2 class="font-semibold
+                               text-gray-900
+                               mt-1">
+
+                        {{ $account->account_title }}
+
+                    </h2>
+
+
+                    <p class="text-lg
+                              font-bold
+                              tracking-wide
+                              mt-3">
+
+                        {{ $account->account_number }}
+
+                    </p>
+
+
+                    <p class="text-xs
+                              text-gray-500
+                              mt-1">
+
+                        {{ $account->bank_name }}
+
+                    </p>
+
+
+                    <div class="mt-4
+                                flex gap-2">
+
+                        <a
+                            href="{{ route(
+                                'admin.bank-accounts.show',
+                                $account
+                            ) }}"
+                            class="flex-1 h-8
+                                   rounded-lg
+                                   bg-gray-100
+                                   hover:bg-gray-200
+                                   text-gray-700
+                                   text-xs
+                                   font-semibold
+                                   inline-flex
+                                   items-center
+                                   justify-center">
+
+                            View
+
+                        </a>
+
+
+                        <a
+                            href="{{ route(
+                                'admin.bank-accounts.print',
+                                $account
+                            ) }}"
+                            target="_blank"
+                            class="w-8 h-8
+                                   rounded-lg
+                                   bg-blue-50
+                                   text-blue-600
+                                   inline-flex
+                                   items-center
+                                   justify-center">
+
+                            <i data-lucide="printer"
+                               class="w-4 h-4"></i>
+
+                        </a>
+
                     </div>
-
-                </div>
-
-
-                <div class="mt-5 flex gap-2">
-
-                    <a href="{{ route('admin.bank-accounts.show', $account) }}"
-                       class="rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold">
-                        View
-                    </a>
-
-                    <a href="{{ route('admin.bank-accounts.edit', $account) }}"
-                       class="rounded-lg bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700">
-                        Edit
-                    </a>
-
-                    <form method="POST"
-                          action="{{ route('admin.bank-accounts.destroy', $account) }}"
-                          onsubmit="return confirm('Delete this account?');">
-
-                        @csrf
-                        @method('DELETE')
-
-                        <button class="rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
-                            Delete
-                        </button>
-
-                    </form>
 
                 </div>
 
@@ -116,8 +143,13 @@
 
         @empty
 
-            <div class="rounded-xl bg-white p-10 text-center text-slate-500 lg:col-span-2">
+            <div class="col-span-full
+                        bg-white border rounded-xl
+                        px-6 py-10 text-center
+                        text-gray-400">
+
                 No bank accounts found.
+
             </div>
 
         @endforelse
@@ -127,3 +159,11 @@
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.lucide) lucide.createIcons();
+});
+</script>
+@endpush

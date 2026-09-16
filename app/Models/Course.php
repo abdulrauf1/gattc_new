@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Course extends Model
 {
-    
+    use HasFactory;
+
     protected $fillable = [
         'course_category_id',
         'bank_account_id',
@@ -27,10 +26,11 @@ class Course extends Model
 
     protected $casts = [
         'fee_amount' => 'decimal:2',
+        'sort_order' => 'integer',
         'status' => 'boolean',
     ];
 
-    public function category(): BelongsTo
+    public function category()
     {
         return $this->belongsTo(
             CourseCategory::class,
@@ -46,11 +46,13 @@ class Course extends Model
         );
     }
 
-    public function admissionSessions(): BelongsToMany
+    public function sessions()
     {
         return $this->belongsToMany(
             AdmissionSession::class,
-            'admission_session_course'
+            'admission_session_course',
+            'course_id',
+            'admission_session_id'
         )->withTimestamps();
     }
 
@@ -62,8 +64,11 @@ class Course extends Model
         );
     }
 
-    public function vouchers(): HasMany
+    public function vouchers()
     {
-        return $this->hasMany(Voucher::class);
+        return $this->hasMany(
+            Voucher::class,
+            'course_id'
+        );
     }
 }

@@ -14,6 +14,7 @@ class StudentCard extends Model
         'card_no',
         'photo',
         'issued_at',
+        'expiry_date',
         'issued_by',
         'status',
         'remarks',
@@ -21,6 +22,7 @@ class StudentCard extends Model
 
     protected $casts = [
         'issued_at' => 'date',
+        'expiry_date' => 'date',
         'status' => 'boolean',
     ];
 

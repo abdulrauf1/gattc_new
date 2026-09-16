@@ -235,13 +235,13 @@ Route::middleware(['auth'])
 
         Route::get('/dashboard', [
             DashboardController::class,
-            'index',
+            'index'
         ])->name('dashboard');
 
 
         /*
         |--------------------------------------------------------------------------
-        | COURSE MANAGEMENT
+        | Course Management
         |--------------------------------------------------------------------------
         */
 
@@ -249,13 +249,6 @@ Route::middleware(['auth'])
             'courses',
             CourseController::class
         );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | COURSE CATEGORY MANAGEMENT
-        |--------------------------------------------------------------------------
-        */
 
         Route::resource(
             'course-categories',
@@ -265,7 +258,7 @@ Route::middleware(['auth'])
 
         /*
         |--------------------------------------------------------------------------
-        | ADMISSION SESSION MANAGEMENT
+        | Admission Sessions
         |--------------------------------------------------------------------------
         */
 
@@ -274,40 +267,26 @@ Route::middleware(['auth'])
             AdmissionSessionController::class
         );
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Open Admission Session
-        |--------------------------------------------------------------------------
-        */
-
         Route::post(
             '/admission-sessions/{admissionSession}/open',
             [
                 AdmissionSessionController::class,
-                'open',
+                'open'
             ]
         )->name('admission-sessions.open');
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Close Admission Session
-        |--------------------------------------------------------------------------
-        */
 
         Route::post(
             '/admission-sessions/{admissionSession}/close',
             [
                 AdmissionSessionController::class,
-                'close',
+                'close'
             ]
         )->name('admission-sessions.close');
 
 
         /*
         |--------------------------------------------------------------------------
-        | BANK ACCOUNTS
+        | Bank Accounts
         |--------------------------------------------------------------------------
         */
 
@@ -319,21 +298,53 @@ Route::middleware(['auth'])
 
         /*
         |--------------------------------------------------------------------------
-        | VOUCHERS
+        | Admissions
         |--------------------------------------------------------------------------
         */
 
-        /*
-         * Keep this custom route before the resource route.
-         */
-        Route::post(
-            '/vouchers/{voucher}/create-admission',
+        Route::get('/admissions', [
+            AdmissionController::class,
+            'index'
+        ])->name('admissions.index');
+
+        Route::get('/admissions/{admission}', [
+            AdmissionController::class,
+            'show'
+        ])->name('admissions.show');
+
+        Route::patch(
+            '/admissions/{admission}/status',
             [
                 AdmissionController::class,
-                'createFromVoucher',
+                'updateStatus'
             ]
-        )->name('vouchers.create-admission');
+        )->name('admissions.status');
 
+        /*
+        | Generate / reissue student card from Admissions page
+        */
+        Route::post(
+            '/admissions/{admission}/student-card',
+            [
+                AdmissionController::class,
+                'generateStudentCard'
+            ]
+        )->name('admissions.student-card');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Vouchers
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/vouchers/{voucher}/print',
+            [
+                VoucherController::class,
+                'print'
+            ]
+        )->name('vouchers.print');
 
         Route::resource(
             'vouchers',
@@ -343,38 +354,20 @@ Route::middleware(['auth'])
             'create',
             'store',
             'show',
-            'destroy',
+            'destroy'
         ]);
 
-        Route::get('/vouchers/{voucher}/print', [VoucherController::class, 'print'])
-        ->name('vouchers.print');
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | ADMISSIONS
-        |--------------------------------------------------------------------------
-        */
-
-        Route::get('/admissions', [
-            AdmissionController::class,
-            'index',
-        ])->name('admissions.index');
-
-        Route::get('/admissions/{admission}', [
-            AdmissionController::class,
-            'show',
-        ])->name('admissions.show');
-
-        Route::patch('/admissions/{admission}/status', [
-            AdmissionController::class,
-            'updateStatus',
-        ])->name('admissions.status');
 
         /*
         |--------------------------------------------------------------------------
         | PAYMENT VERIFICATION
         |--------------------------------------------------------------------------
+        |
+        | IMPORTANT:
+        | This module is voucher-centric.
+        | Therefore all generated vouchers appear here,
+        | even when payment has not yet been submitted.
+        |
         */
 
         Route::get('/fee-payments', [
@@ -382,37 +375,177 @@ Route::middleware(['auth'])
             'index'
         ])->name('fee-payments.index');
 
-        Route::get('/fee-payments/{feePayment}', [
-            FeePaymentController::class,
+        /*
+        | Open payment verification for a voucher.
+        | Works for both:
+        | - voucher without payment
+        | - voucher with existing payment
+        */
+        Route::get(
+            '/fee-payments/voucher/{voucher}',
+            [
+                FeePaymentController::class,
+                'showVoucher'
+            ]
+        )->name('fee-payments.voucher');
+
+
+        /*
+        | Create or update deposited-payment information.
+        */
+        Route::patch(
+            '/fee-payments/voucher/{voucher}/details',
+            [
+                FeePaymentController::class,
+                'updateDetails'
+            ]
+        )->name('fee-payments.update-details');
+
+
+        /*
+        | Approve payment
+        */
+        Route::post(
+            '/fee-payments/voucher/{voucher}/approve',
+            [
+                FeePaymentController::class,
+                'approve'
+            ]
+        )->name('fee-payments.approve');
+
+
+        /*
+        | Reject payment
+        */
+        Route::post(
+            '/fee-payments/voucher/{voucher}/reject',
+            [
+                FeePaymentController::class,
+                'reject'
+            ]
+        )->name('fee-payments.reject');
+
+
+        /*
+        | View uploaded slip
+        */
+        Route::get(
+            '/fee-payments/{feePayment}/slip',
+            [
+                FeePaymentController::class,
+                'slip'
+            ]
+        )->name('fee-payments.slip');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Student Cards
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/student-cards/{studentCard}/print',
+            [
+                AdmissionController::class,
+                'printStudentCard'
+            ]
+        )->name('student-cards.print');
+
+
+                
+        /*
+        |--------------------------------------------------------------------------
+        | Gallery
+        |--------------------------------------------------------------------------
+        */
+
+        Route::resource(
+            'gallery',
+            GalleryController::class
+        )->parameters([
+            'gallery' => 'gallery'
+        ]);
+
+        Route::delete(
+            '/gallery/{gallery}/images/{image}',
+            [GalleryController::class, 'destroyImage']
+        )->name('gallery.images.destroy');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Announcements
+        |--------------------------------------------------------------------------
+        */
+
+        Route::resource(
+            'announcements',
+            AnnouncementController::class
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Events
+        |--------------------------------------------------------------------------
+        */
+
+        Route::resource(
+            'events',
+            EventController::class
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Alumni
+        |--------------------------------------------------------------------------
+        */
+
+        Route::resource(
+            'alumni',
+            AlumniController::class
+        )->except([
             'show'
-        ])->name('fee-payments.show');
+        ]);
 
-        Route::post('/fee-payments/{feePayment}/approve', [
-            FeePaymentController::class,
-            'approve'
-        ])->name('fee-payments.approve');
+        Route::patch(
+            '/alumni/{alumnus}/approve',
+            [AlumniController::class, 'approve']
+        )->name('alumni.approve');
 
-        Route::post('/fee-payments/{feePayment}/reject', [
-            FeePaymentController::class,
-            'reject'
-        ])->name('fee-payments.reject');
+        Route::patch(
+            '/alumni/{alumnus}/reject',
+            [AlumniController::class, 'reject']
+        )->name('alumni.reject');
 
-        Route::get('/fee-payments/{feePayment}/slip', [
-            FeePaymentController::class,
-            'slip'
-        ])->name('fee-payments.slip');
 
-        Route::post('/fee-payments/{feePayment}/finalize-admission', [
-            FeePaymentController::class,
-            'finalizeAdmission'
-        ])->name('fee-payments.finalize-admission');
+        /*
+        |--------------------------------------------------------------------------
+        | Bank Accounts - View Only
+        |--------------------------------------------------------------------------
+        */
 
-        Route::get('/student-cards/{studentCard}/print', [
-            FeePaymentController::class,
-            'printStudentCard'
-        ])->name('student-cards.print');
+        Route::get(
+            '/bank-accounts',
+            [BankAccountController::class, 'index']
+        )->name('bank-accounts.index');
+
+        Route::get(
+            '/bank-accounts/{bankAccount}',
+            [BankAccountController::class, 'show']
+        )->name('bank-accounts.show');
+
+        Route::get(
+            '/bank-accounts/{bankAccount}/print',
+            [BankAccountController::class, 'print']
+        )->name('bank-accounts.print');
+
+
+
+
     });
-
 
 /*
 |--------------------------------------------------------------------------

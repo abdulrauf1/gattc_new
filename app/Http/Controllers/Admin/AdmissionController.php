@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admission;
-use App\Models\Course;
+use App\Models\FeePayment;
+use App\Models\StudentCard;
 use App\Models\Voucher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use RuntimeException;
+use Illuminate\Support\Facades\Storage;
 
 class AdmissionController extends Controller
 {
@@ -17,89 +18,140 @@ class AdmissionController extends Controller
     | Admissions List
     |--------------------------------------------------------------------------
     */
+
     public function index(Request $request)
     {
         $query = Admission::query()
             ->with([
-                'course',
+                'course.category',
                 'session',
+                'vouchers.payment',
             ])
-            ->latest();
+            ->latest('id');
+
 
         /*
         |--------------------------------------------------------------------------
         | Search
         |--------------------------------------------------------------------------
         */
+
         if ($request->filled('search')) {
 
-            $search = trim($request->search);
+            $search =
+                trim($request->search);
 
             $query->where(function ($q) use ($search) {
 
-                $q->where('admission_no', 'like', "%{$search}%")
-                    ->orWhere('student_name', 'like', "%{$search}%")
-                    ->orWhere('father_name', 'like', "%{$search}%")
-                    ->orWhere('cnic', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%");
+                $q->where(
+                    'admission_no',
+                    'like',
+                    "%{$search}%"
+                )
+
+                ->orWhere(
+                    'student_name',
+                    'like',
+                    "%{$search}%"
+                )
+
+                ->orWhere(
+                    'father_name',
+                    'like',
+                    "%{$search}%"
+                )
+
+                ->orWhere(
+                    'cnic',
+                    'like',
+                    "%{$search}%"
+                )
+
+                ->orWhere(
+                    'phone',
+                    'like',
+                    "%{$search}%"
+                );
             });
         }
+
 
         /*
         |--------------------------------------------------------------------------
         | Status
         |--------------------------------------------------------------------------
         */
+
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+
+            $query->where(
+                'status',
+                $request->status
+            );
         }
+
 
         /*
         |--------------------------------------------------------------------------
         | Course
         |--------------------------------------------------------------------------
         */
+
         if ($request->filled('course_id')) {
-            $query->where('course_id', $request->course_id);
+
+            $query->where(
+                'course_id',
+                $request->course_id
+            );
         }
 
-        $admissions = $query
-            ->paginate(15)
-            ->withQueryString();
+
+        $admissions =
+            $query
+                ->paginate(15)
+                ->withQueryString();
+
 
         /*
         |--------------------------------------------------------------------------
         | Statistics
         |--------------------------------------------------------------------------
         */
-        $totalAdmissions = Admission::count();
 
-        $approvedAdmissions = Admission::where(
-            'status',
-            'approved'
-        )->count();
+        $totalAdmissions =
+            Admission::count();
 
-        $pendingAdmissions = Admission::where(
-            'status',
-            'pending'
-        )->count();
+        $pendingAdmissions =
+            Admission::where(
+                'status',
+                'pending'
+            )->count();
 
-        $rejectedAdmissions = Admission::where(
-            'status',
-            'rejected'
-        )->count();
+        $approvedAdmissions =
+            Admission::where(
+                'status',
+                'approved'
+            )->count();
+
+        $rejectedAdmissions =
+            Admission::where(
+                'status',
+                'rejected'
+            )->count();
+
 
         /*
         |--------------------------------------------------------------------------
-        | Course Filter
+        | Courses
         |--------------------------------------------------------------------------
         */
-        $courses = Course::query()
-            ->orderBy('title')
-            ->get([
-                'id',
-                'title',
-            ]);
+
+        $courses =
+            \App\Models\Course::query()
+                ->where('status', true)
+                ->orderBy('title')
+                ->get();
+
 
         return view(
             'admin.admissions.index',
@@ -107,68 +159,176 @@ class AdmissionController extends Controller
                 'admissions',
                 'courses',
                 'totalAdmissions',
-                'approvedAdmissions',
                 'pendingAdmissions',
+                'approvedAdmissions',
                 'rejectedAdmissions'
             )
         );
     }
 
+
     /*
     |--------------------------------------------------------------------------
-    | Show Admission
+    | Admission Details
     |--------------------------------------------------------------------------
     */
+
     public function show(Admission $admission)
     {
         $admission->load([
-            'course.bankAccount',
             'course.category',
             'session',
-            'vouchers' => function ($query) {
-                $query->latest();
-            },
+            'vouchers.payment',
+            'vouchers.bankAccount',
+            'studentCards.issuedBy',
         ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Determine whether card generation is allowed
+        |--------------------------------------------------------------------------
+        */
+
+        $paidAdmissionVoucher =
+            $admission->vouchers
+                ->whereIn(
+                    'voucher_type',
+                    [
+                        'admission',
+                        'readmission',
+                    ]
+                )
+                ->first(
+                    fn ($voucher) =>
+                        $voucher->payment &&
+                        $voucher->payment->status === 'approved'
+                );
+
+
+        $canGenerateCard =
+            $admission->status === 'approved'
+            &&
+            $paidAdmissionVoucher !== null;
+
 
         return view(
             'admin.admissions.show',
-            compact('admission')
+            compact(
+                'admission',
+                'paidAdmissionVoucher',
+                'canGenerateCard'
+            )
         );
     }
+
 
     /*
     |--------------------------------------------------------------------------
     | Update Admission Status
     |--------------------------------------------------------------------------
     |
-    | Used by administration after manually checking:
+    | Payment verification does NOT approve the admission.
     |
-    | - Application form
-    | - Deposited bank slip
-    | - Student documents
+    | Admission status is controlled here after physical verification
+    | of the application/documents.
     |
     */
+
     public function updateStatus(
         Request $request,
         Admission $admission
     ) {
-        $validated = $request->validate([
-            'status' => [
-                'required',
-                'in:pending,approved,rejected',
-            ],
+        $validated =
+            $request->validate([
 
-            'remarks' => [
-                'nullable',
-                'string',
-                'max:5000',
-            ],
-        ]);
+                'status' => [
+                    'required',
+                    'in:pending,approved,rejected',
+                ],
+
+                'remarks' => [
+                    'nullable',
+                    'string',
+                    'max:1000',
+                ],
+            ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Approved admission requires verified payment
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $validated['status'] === 'approved'
+        ) {
+
+            $hasApprovedPayment =
+                $admission->vouchers()
+                    ->whereIn(
+                        'voucher_type',
+                        [
+                            'admission',
+                            'readmission',
+                        ]
+                    )
+                    ->whereHas(
+                        'payment',
+                        function ($payment) {
+                            $payment->where(
+                                'status',
+                                'approved'
+                            );
+                        }
+                    )
+                    ->exists();
+
+
+            if (!$hasApprovedPayment) {
+
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        'status' =>
+                            'Admission cannot be approved until the admission/readmission payment has been verified.',
+                    ]);
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Generate Admission Number when approved
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $validated['status'] === 'approved'
+            &&
+            empty($admission->admission_no)
+        ) {
+
+            $validated['admission_no'] =
+                $this->generateAdmissionNo();
+        }
+
 
         $admission->update([
-            'status' => $validated['status'],
-            'remarks' => $validated['remarks'] ?? null,
+
+            'admission_no' =>
+                $validated['admission_no']
+                ?? $admission->admission_no,
+
+            'status' =>
+                $validated['status'],
+
+            'remarks' =>
+                $validated['remarks']
+                ?: $admission->remarks,
         ]);
+
 
         return redirect()
             ->route(
@@ -181,197 +341,432 @@ class AdmissionController extends Controller
             );
     }
 
+
     /*
     |--------------------------------------------------------------------------
-    | Create Admission From Paid Voucher
+    | Generate / Reissue Student Card
     |--------------------------------------------------------------------------
+    |
+    | THIS IS THE ONLY PLACE where a student card is generated.
+    |
     */
-    public function createFromVoucher(
+
+    public function generateStudentCard(
         Request $request,
-        Voucher $voucher
+        Admission $admission
     ) {
         /*
         |--------------------------------------------------------------------------
-        | Only admission vouchers
+        | Admission must be approved
         |--------------------------------------------------------------------------
         */
-        if ($voucher->voucher_type !== 'admission') {
 
-            return back()->with(
-                'error',
-                'Only admission vouchers can be converted into an admission.'
-            );
+        if ($admission->status !== 'approved') {
+
+            return back()->withErrors([
+                'card' =>
+                    'Student card can only be generated after the admission is approved.',
+            ]);
         }
+
 
         /*
         |--------------------------------------------------------------------------
-        | Payment must be approved
+        | Verify payment
         |--------------------------------------------------------------------------
         */
-        if ($voucher->status !== 'paid') {
 
-            return back()->with(
-                'error',
-                'This voucher cannot be finalized because its payment has not been approved.'
-            );
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Prevent duplicate admission
-        |--------------------------------------------------------------------------
-        */
-        if ($voucher->admission_id) {
-
-            return redirect()
-                ->route(
-                    'admin.admissions.show',
-                    $voucher->admission_id
+        $paidVoucher =
+            $admission->vouchers()
+                ->whereIn(
+                    'voucher_type',
+                    [
+                        'admission',
+                        'readmission',
+                    ]
                 )
-                ->with(
-                    'error',
-                    'This voucher has already been converted into an admission.'
-                );
+                ->whereHas(
+                    'payment',
+                    function ($payment) {
+                        $payment->where(
+                            'status',
+                            'approved'
+                        );
+                    }
+                )
+                ->latest('id')
+                ->first();
+
+
+        if (!$paidVoucher) {
+
+            return back()->withErrors([
+                'card' =>
+                    'A verified admission or readmission payment is required before generating a student card.',
+            ]);
         }
+
 
         /*
         |--------------------------------------------------------------------------
-        | Required relationships
+        | Photo
         |--------------------------------------------------------------------------
         */
-        if (!$voucher->course_id) {
 
-            return back()->with(
-                'error',
-                'The voucher does not have a course assigned.'
+        $request->validate([
+            'student_photo' => [
+                'required',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:2048',
+            ],
+
+            'expiry_date' => [
+                'nullable',
+                'date',
+                'after_or_equal:today',
+            ],
+
+            'remarks' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+        ]);
+
+
+        $result =
+            DB::transaction(function () use (
+                $request,
+                $admission,
+                $paidVoucher
+            ) {
+
+                /*
+                |--------------------------------------------------------------------------
+                | Generate Admission No if still missing
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    empty(
+                        $admission->admission_no
+                    )
+                ) {
+
+                    $admission->update([
+                        'admission_no' =>
+                            $this->generateAdmissionNo(),
+                    ]);
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Save student photo
+                |--------------------------------------------------------------------------
+                */
+
+                $photoPath =
+                    $request
+                        ->file('student_photo')
+                        ->store(
+                            'students/photos',
+                            'public'
+                        );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Update admission photo
+                |--------------------------------------------------------------------------
+                */
+
+                $admission->update([
+                    'student_photo' =>
+                        $photoPath,
+                ]);
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Disable previous active card
+                |--------------------------------------------------------------------------
+                */
+
+                StudentCard::query()
+                    ->where(
+                        'admission_id',
+                        $admission->id
+                    )
+                    ->where(
+                        'status',
+                        true
+                    )
+                    ->update([
+                        'status' => false,
+
+                        'remarks' =>
+                            'Superseded by newly issued student card.',
+                    ]);
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Generate card number
+                |--------------------------------------------------------------------------
+                */
+
+                $cardNo =
+                    $this->generateStudentCardNo();
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Expiry
+                |--------------------------------------------------------------------------
+                */
+
+                $expiryDate =
+                    $request->input(
+                        'expiry_date'
+                    );
+
+
+                /*
+                | Default card validity:
+                | one year from issue date.
+                */
+
+                if (!$expiryDate) {
+
+                    $expiryDate =
+                        now()
+                            ->addYear()
+                            ->toDateString();
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Create card
+                |--------------------------------------------------------------------------
+                */
+
+                $studentCard =
+                    StudentCard::create([
+
+                        'admission_id' =>
+                            $admission->id,
+
+                        'card_no' =>
+                            $cardNo,
+
+                        'photo' =>
+                            $photoPath,
+
+                        'issued_at' =>
+                            now()->toDateString(),
+
+                        'expiry_date' =>
+                            $expiryDate,
+
+                        'issued_by' =>
+                            auth()->id(),
+
+                        'status' =>
+                            true,
+
+                        'remarks' =>
+                            $paidVoucher->voucher_type === 'readmission'
+
+                                ? (
+                                    $request->input(
+                                        'remarks'
+                                    )
+                                    ?: 'Student card reissued after readmission payment verification.'
+                                )
+
+                                : (
+                                    $request->input(
+                                        'remarks'
+                                    )
+                                    ?: 'Student card generated after admission and payment verification.'
+                                ),
+                    ]);
+
+
+                return $studentCard;
+            });
+
+
+        return redirect()
+            ->route(
+                'admin.student-cards.print',
+                $result
+            )
+            ->with(
+                'success',
+                'Student card generated successfully.'
             );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Print Student Card
+    |--------------------------------------------------------------------------
+    */
+
+    public function printStudentCard(
+        StudentCard $studentCard
+    ) {
+        $studentCard->load([
+            'admission.course',
+            'admission.session',
+        ]);
+
+        return view(
+            'admin.student-cards.print',
+            compact('studentCard')
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admission Number
+    |--------------------------------------------------------------------------
+    */
+
+    private function generateAdmissionNo(): string
+    {
+        $year =
+            now()->format('Y');
+
+
+        $lastAdmission =
+            Admission::query()
+                ->where(
+                    'admission_no',
+                    'like',
+                    'ADM-' . $year . '-%'
+                )
+                ->latest('id')
+                ->lockForUpdate()
+                ->first();
+
+
+        $number = 1;
+
+
+        if ($lastAdmission) {
+
+            $number =
+                ((int) substr(
+                    $lastAdmission->admission_no,
+                    -5
+                )) + 1;
         }
 
-        if (!$voucher->admission_session_id) {
 
-            return back()->with(
-                'error',
-                'The voucher does not have an admission session assigned.'
-            );
-        }
+        do {
 
-        /*
-        |--------------------------------------------------------------------------
-        | Create admission
-        |--------------------------------------------------------------------------
-        */
-        $admission = DB::transaction(function () use ($voucher) {
-
-            /*
-            |--------------------------------------------------------------------------
-            | Generate admission number
-            |--------------------------------------------------------------------------
-            */
-            $admissionNo = 'GATTC-' .
-                now()->format('Y') .
+            $admissionNo =
+                'ADM-' .
+                $year .
                 '-' .
                 str_pad(
-                    (string) $voucher->id,
-                    6,
+                    $number,
+                    5,
                     '0',
                     STR_PAD_LEFT
                 );
 
-            while (
+
+            $exists =
                 Admission::where(
                     'admission_no',
                     $admissionNo
-                )->exists()
-            ) {
+                )->exists();
 
-                $admissionNo = 'GATTC-' .
-                    now()->format('Y') .
-                    '-' .
-                    str_pad(
-                        (string) random_int(
-                            1,
-                            999999
-                        ),
-                        6,
-                        '0',
-                        STR_PAD_LEFT
-                    );
+
+            if ($exists) {
+                $number++;
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Create admission
-            |--------------------------------------------------------------------------
-            |
-            | It starts as pending so the administration can manually
-            | verify the physical application and deposited bank slip.
-            |
-            */
-            $admission = Admission::create([
+        } while ($exists);
 
-                'admission_no' =>
-                    $admissionNo,
 
-                'admission_session_id' =>
-                    $voucher->admission_session_id,
+        return $admissionNo;
+    }
 
-                'course_id' =>
-                    $voucher->course_id,
 
-                'student_name' =>
-                    $voucher->applicant_name,
+    /*
+    |--------------------------------------------------------------------------
+    | Student Card Number
+    |--------------------------------------------------------------------------
+    */
 
-                'father_name' =>
-                    $voucher->father_name,
+    private function generateStudentCardNo(): string
+    {
+        $year =
+            now()->format('Y');
 
-                'cnic' =>
-                    $voucher->cnic,
 
-                'date_of_birth' =>
-                    $voucher->date_of_birth,
+        $lastCard =
+            StudentCard::query()
+                ->where(
+                    'card_no',
+                    'like',
+                    'STC-' . $year . '-%'
+                )
+                ->latest('id')
+                ->lockForUpdate()
+                ->first();
 
-                'gender' =>
-                    $voucher->gender,
 
-                'phone' =>
-                    $voucher->phone,
+        $number = 1;
 
-                'email' =>
-                    $voucher->email,
 
-                'address' =>
-                    $voucher->address,
+        if ($lastCard) {
 
-                'status' =>
-                    'pending',
+            $number =
+                ((int) substr(
+                    $lastCard->card_no,
+                    -5
+                )) + 1;
+        }
 
-                'remarks' =>
-                    'Admission created from paid voucher ' .
-                    $voucher->voucher_no .
-                    '. Awaiting manual document verification.',
 
-            ]);
+        do {
 
-            /*
-            |--------------------------------------------------------------------------
-            | Link voucher
-            |--------------------------------------------------------------------------
-            */
-            $voucher->update([
-                'admission_id' => $admission->id,
-            ]);
+            $cardNo =
+                'STC-' .
+                $year .
+                '-' .
+                str_pad(
+                    $number,
+                    5,
+                    '0',
+                    STR_PAD_LEFT
+                );
 
-            return $admission;
-        });
 
-        return redirect()
-            ->route(
-                'admin.admissions.show',
-                $admission
-            )
-            ->with(
-                'success',
-                'Admission record created successfully and is awaiting administrative verification.'
-            );
+            $exists =
+                StudentCard::where(
+                    'card_no',
+                    $cardNo
+                )->exists();
+
+
+            if ($exists) {
+                $number++;
+            }
+
+        } while ($exists);
+
+
+        return $cardNo;
     }
 }

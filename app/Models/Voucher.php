@@ -29,8 +29,6 @@ class Voucher extends Model
         'due_date',
         'status',
         'remarks',
-
-        // Bank snapshot
         'bank_name',
         'account_title',
         'account_number',
@@ -46,12 +44,6 @@ class Voucher extends Model
         'amount' => 'decimal:2',
     ];
 
-    /*
-    |--------------------------------------------------------------------------
-    | Relationships
-    |--------------------------------------------------------------------------
-    */
-
     public function session()
     {
         return $this->belongsTo(
@@ -62,42 +54,51 @@ class Voucher extends Model
 
     public function course()
     {
-        return $this->belongsTo(Course::class);
+        return $this->belongsTo(
+            Course::class
+        );
     }
 
     public function admission()
     {
-        return $this->belongsTo(Admission::class);
+        return $this->belongsTo(
+            Admission::class,
+            'admission_id'
+        );
     }
 
     public function bankAccount()
     {
-        return $this->belongsTo(BankAccount::class);
+        return $this->belongsTo(
+            BankAccount::class,
+            'bank_account_id'
+        );
     }
 
     public function payment()
     {
-        return $this->hasOne(FeePayment::class);
+        return $this->hasOne(
+            FeePayment::class,
+            'voucher_id'
+        );
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Helpers
-    |--------------------------------------------------------------------------
-    */
 
     public function getVoucherTypeLabelAttribute(): string
     {
         return match ($this->voucher_type) {
-            'admission' => 'Admission',
-            'hostel' => 'Hostel',
-            'readmission' => 'Readmission',
-            default => ucfirst($this->voucher_type),
-        };
-    }
+            'admission' =>
+                'Admission',
 
-    public function getStatusLabelAttribute(): string
-    {
-        return ucfirst($this->status);
+            'hostel' =>
+                'Hostel',
+
+            'readmission' =>
+                'Readmission',
+
+            default =>
+                ucfirst(
+                    $this->voucher_type
+                ),
+        };
     }
 }

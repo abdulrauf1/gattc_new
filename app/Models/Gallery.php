@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Gallery extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'title',
         'slug',
@@ -18,8 +20,11 @@ class Gallery extends Model
         'status' => 'boolean',
     ];
 
-    public function images(): HasMany
+    public function images()
     {
-        return $this->hasMany(GalleryImage::class);
+        return $this->hasMany(
+            GalleryImage::class,
+            'gallery_id'
+        )->orderBy('sort_order');
     }
 }

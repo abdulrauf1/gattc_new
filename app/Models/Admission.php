@@ -21,6 +21,7 @@ class Admission extends Model
         'phone',
         'email',
         'address',
+        'student_photo',
         'status',
         'remarks',
     ];
@@ -68,5 +69,15 @@ class Admission extends Model
             StudentCard::class,
             'admission_id'
         );
+    }
+
+    public function currentStudentCard()
+    {
+        return $this->hasOne(
+            StudentCard::class,
+            'admission_id'
+        )
+        ->where('status', true)
+        ->latestOfMany();
     }
 }

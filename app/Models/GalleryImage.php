@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class GalleryImage extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'gallery_id',
         'image',
@@ -14,8 +16,10 @@ class GalleryImage extends Model
         'sort_order',
     ];
 
-    public function gallery(): BelongsTo
+    public function gallery()
     {
-        return $this->belongsTo(Gallery::class);
+        return $this->belongsTo(
+            Gallery::class
+        );
     }
 }

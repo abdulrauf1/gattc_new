@@ -7,18 +7,17 @@
 <div class="max-w-7xl mx-auto space-y-4">
 
     @php
-        $voucher = $feePayment->voucher;
-        $admission = $voucher?->admission;
+        $payment = $voucher->payment;
+        $admission = $voucher->admission;
 
         $isHostel =
-            $voucher?->voucher_type === 'hostel';
+            $voucher->voucher_type === 'hostel';
 
         $isReadmission =
-            $voucher?->voucher_type === 'readmission';
+            $voucher->voucher_type === 'readmission';
 
-        $needsFinalization =
-            !$isHostel &&
-            $feePayment->status === 'approved';
+        $isAdmission =
+            $voucher->voucher_type === 'admission';
     @endphp
 
 
@@ -33,20 +32,31 @@
                     Payment Verification
                 </h1>
 
-                <span
-                    class="px-2.5 py-1 rounded-full
-                           text-xs font-semibold
-                           @if($feePayment->status === 'approved')
-                               bg-emerald-50 text-emerald-700
-                           @elseif($feePayment->status === 'rejected')
-                               bg-red-50 text-red-700
-                           @else
-                               bg-amber-50 text-amber-700
-                           @endif">
+                @if(!$payment)
 
-                    {{ ucfirst($feePayment->status) }}
+                    <span class="status-gray">
+                        Not Submitted
+                    </span>
 
-                </span>
+                @elseif($payment->status === 'pending')
+
+                    <span class="status-amber">
+                        Pending Verification
+                    </span>
+
+                @elseif($payment->status === 'approved')
+
+                    <span class="status-green">
+                        Approved
+                    </span>
+
+                @else
+
+                    <span class="status-red">
+                        Rejected
+                    </span>
+
+                @endif
 
             </div>
 
@@ -54,78 +64,151 @@
 
                 Voucher:
                 <strong>
-                    {{ $voucher?->voucher_no }}
+                    {{ $voucher->voucher_no }}
                 </strong>
+
+                —
+                {{ $voucher->voucher_type_label }}
 
             </p>
 
         </div>
 
 
-        <a
-            href="{{ route('admin.fee-payments.index') }}"
-            class="h-9 px-3 rounded-lg bg-gray-100
-                   hover:bg-gray-200
-                   text-gray-700 text-sm
-                   inline-flex items-center gap-1.5">
+        <div class="flex items-center gap-2">
 
-            <i data-lucide="arrow-left"
-               class="w-4 h-4">
-            </i>
+            <a
+                href="{{ route(
+                    'admin.fee-payments.index'
+                ) }}"
+                class="h-9 px-3 rounded-lg
+                       bg-gray-100
+                       hover:bg-gray-200
+                       text-gray-700
+                       text-sm
+                       inline-flex
+                       items-center gap-1.5">
 
-            Back
+                <i data-lucide="arrow-left"
+                   class="w-4 h-4">
+                </i>
 
-        </a>
+                Back
+
+            </a>
+
+
+            <a
+                href="{{ route(
+                    'admin.vouchers.print',
+                    $voucher
+                ) }}"
+                target="_blank"
+                class="h-9 px-3 rounded-lg
+                       bg-blue-600
+                       hover:bg-blue-700
+                       text-white
+                       text-sm
+                       font-semibold
+                       inline-flex
+                       items-center gap-1.5">
+
+                <i data-lucide="printer"
+                   class="w-4 h-4">
+                </i>
+
+                Print Voucher
+
+            </a>
+
+        </div>
 
     </div>
 
 
-    {{-- Verification Reminder --}}
-    @if($feePayment->status === 'pending')
+    {{-- Voucher Summary --}}
+    <div class="grid grid-cols-2
+                md:grid-cols-4 gap-3">
 
-        <div
-            class="rounded-xl border
-                   border-amber-200
-                   bg-amber-50 p-4">
+        <div class="bg-white border rounded-xl p-3">
 
-            <div class="flex gap-3">
+            <p class="label">
+                Student
+            </p>
 
-                <i data-lucide="triangle-alert"
-                   class="w-5 h-5 text-amber-600">
-                </i>
-
-                <div>
-
-                    <p class="text-sm font-semibold text-amber-800">
-                        Physical Verification Required
-                    </p>
-
-                    <p class="text-xs text-amber-700 mt-1">
-                        Compare the uploaded payment slip with the
-                        original deposited bank copy before approving
-                        this payment.
-                    </p>
-
-                </div>
-
-            </div>
+            <p class="value">
+                {{ $voucher->applicant_name }}
+            </p>
 
         </div>
 
-    @endif
+
+        <div class="bg-white border rounded-xl p-3">
+
+            <p class="label">
+                Type
+            </p>
+
+            <p class="value">
+                {{ $voucher->voucher_type_label }}
+            </p>
+
+        </div>
 
 
-    <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+        <div class="bg-white border rounded-xl p-3">
+
+            <p class="label">
+                Course
+            </p>
+
+            <p class="value">
+                {{ $voucher->course?->title
+                    ?: (
+                        $isHostel
+                            ? 'Hostel Fee'
+                            : '—'
+                    )
+                }}
+            </p>
+
+        </div>
+
+
+        <div class="bg-white border rounded-xl p-3">
+
+            <p class="label">
+                Voucher Amount
+            </p>
+
+            <p class="text-lg font-bold text-gray-900">
+                Rs.
+                {{ number_format(
+                    $voucher->amount,
+                    2
+                ) }}
+            </p>
+
+        </div>
+
+    </div>
+
+
+    {{-- Main --}}
+    <div class="grid grid-cols-1
+                xl:grid-cols-12 gap-4">
 
 
         {{-- LEFT --}}
         <div class="xl:col-span-8 space-y-4">
 
 
-            {{-- Student / Voucher --}}
-            <div class="bg-white border rounded-xl overflow-hidden">
+            {{-- Student --}}
+            <div class="bg-white border
+                        rounded-xl overflow-hidden">
 
-                <div class="px-4 py-3 border-b bg-gray-50">
+                <div class="px-4 py-3
+                            border-b bg-gray-50">
 
                     <h2 class="text-sm font-semibold">
                         Student & Voucher Information
@@ -134,105 +217,99 @@
                 </div>
 
 
-                <div class="p-4 grid grid-cols-1
-                            sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="p-4 grid
+                            grid-cols-1
+                            sm:grid-cols-2
+                            lg:grid-cols-4 gap-4">
 
                     <div>
-                        <p class="detail-label">
-                            Student
+                        <p class="label">
+                            Student Name
                         </p>
 
-                        <p class="detail-value">
-                            {{ $voucher?->applicant_name }}
+                        <p class="value">
+                            {{ $voucher->applicant_name }}
                         </p>
                     </div>
 
 
                     <div>
-                        <p class="detail-label">
-                            Father
+                        <p class="label">
+                            Father Name
                         </p>
 
-                        <p class="detail-value">
-                            {{ $voucher?->father_name ?: '—' }}
+                        <p class="value">
+                            {{ $voucher->father_name ?: '—' }}
                         </p>
                     </div>
 
 
                     <div>
-                        <p class="detail-label">
+                        <p class="label">
                             CNIC
                         </p>
 
-                        <p class="detail-value">
-                            {{ $voucher?->cnic }}
+                        <p class="value">
+                            {{ $voucher->cnic }}
                         </p>
                     </div>
 
 
                     <div>
-                        <p class="detail-label">
+                        <p class="label">
                             Contact
                         </p>
 
-                        <p class="detail-value">
-                            {{ $voucher?->phone }}
+                        <p class="value">
+                            {{ $voucher->phone }}
                         </p>
                     </div>
 
 
                     <div>
-                        <p class="detail-label">
-                            Voucher
+                        <p class="label">
+                            Issue Date
                         </p>
 
-                        <p class="detail-value font-semibold">
-                            {{ $voucher?->voucher_no }}
-                        </p>
-                    </div>
-
-
-                    <div>
-                        <p class="detail-label">
-                            Voucher Type
-                        </p>
-
-                        <p class="detail-value">
-                            {{ ucfirst(
-                                $voucher?->voucher_type
-                            ) }}
+                        <p class="value">
+                            {{ optional(
+                                $voucher->issue_date
+                            )->format('d M Y') }}
                         </p>
                     </div>
 
 
                     <div>
-                        <p class="detail-label">
-                            Course
+                        <p class="label">
+                            Due Date
                         </p>
 
-                        <p class="detail-value">
-                            {{ $voucher?->course?->title
-                                ?: (
-                                    $isHostel
-                                        ? 'Hostel Fee'
-                                        : '—'
-                                )
-                            }}
+                        <p class="value">
+                            {{ optional(
+                                $voucher->due_date
+                            )->format('d M Y') }}
                         </p>
                     </div>
 
 
                     <div>
-                        <p class="detail-label">
-                            Voucher Amount
+                        <p class="label">
+                            Session
                         </p>
 
-                        <p class="text-lg font-bold">
-                            Rs.
-                            {{ number_format(
-                                $voucher?->amount ?? 0,
-                                2
-                            ) }}
+                        <p class="value">
+                            {{ $voucher->session?->title ?: '—' }}
+                        </p>
+                    </div>
+
+
+                    <div>
+                        <p class="label">
+                            Admission No.
+                        </p>
+
+                        <p class="value font-semibold">
+                            {{ $admission?->admission_no ?: 'Pending' }}
                         </p>
                     </div>
 
@@ -241,197 +318,451 @@
             </div>
 
 
-            {{-- Payment --}}
-            <div class="bg-white border rounded-xl overflow-hidden">
+            {{-- Payment details --}}
+            <div class="bg-white border
+                        rounded-xl overflow-hidden">
 
-                <div class="px-4 py-3 border-b bg-gray-50">
+                <div class="px-4 py-3
+                            border-b bg-gray-50">
 
                     <h2 class="text-sm font-semibold">
                         Deposited Payment
                     </h2>
 
-                </div>
-
-
-                <div class="p-4 grid grid-cols-1
-                            sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
-                    <div>
-                        <p class="detail-label">
-                            Deposit Slip No.
-                        </p>
-
-                        <p class="detail-value">
-                            {{ $feePayment->deposit_slip_no ?: '—' }}
-                        </p>
-                    </div>
-
-
-                    <div>
-                        <p class="detail-label">
-                            Bank Transaction No.
-                        </p>
-
-                        <p class="detail-value">
-                            {{ $feePayment->bank_transaction_no ?: '—' }}
-                        </p>
-                    </div>
-
-
-                    <div>
-                        <p class="detail-label">
-                            Payment Date
-                        </p>
-
-                        <p class="detail-value">
-                            {{ optional(
-                                $feePayment->payment_date
-                            )->format('d M Y') ?: '—' }}
-                        </p>
-                    </div>
-
-
-                    <div>
-                        <p class="detail-label">
-                            Amount Deposited
-                        </p>
-
-                        <p class="text-lg font-bold">
-                            Rs.
-                            {{ number_format(
-                                $feePayment->amount,
-                                2
-                            ) }}
-                        </p>
-                    </div>
+                    <p class="text-[11px] text-gray-500 mt-0.5">
+                        Enter the actual bank deposit information submitted by the student.
+                    </p>
 
                 </div>
 
 
-                <div class="px-4 pb-4">
+                @if($payment)
 
-                    <div class="rounded-lg
-                                bg-gray-50 border p-3">
+                    <div class="p-4 grid
+                                grid-cols-1
+                                sm:grid-cols-2
+                                lg:grid-cols-4 gap-4">
 
-                        <div class="flex items-center
-                                    justify-between">
+                        <div>
+                            <p class="label">
+                                Deposit Slip No.
+                            </p>
 
-                            <div>
+                            <p class="value">
+                                {{ $payment->deposit_slip_no ?: '—' }}
+                            </p>
+                        </div>
 
-                                <p class="text-xs
-                                          font-semibold">
-                                    Uploaded Payment Slip
-                                </p>
 
-                                <p class="text-[11px]
-                                          text-gray-500 mt-0.5">
-                                    Open and compare with the
-                                    physical bank receipt.
-                                </p>
+                        <div>
+                            <p class="label">
+                                Transaction No.
+                            </p>
 
-                            </div>
+                            <p class="value">
+                                {{ $payment->bank_transaction_no ?: '—' }}
+                            </p>
+                        </div>
 
-                            @if($feePayment->payment_slip)
 
-                                <a
-                                    href="{{ route(
-                                        'admin.fee-payments.slip',
-                                        $feePayment
-                                    ) }}"
-                                    target="_blank"
-                                    class="h-8 px-3
-                                           rounded-lg
-                                           bg-blue-600
-                                           hover:bg-blue-700
-                                           text-white text-xs
-                                           font-semibold
-                                           inline-flex
-                                           items-center gap-1.5">
+                        <div>
+                            <p class="label">
+                                Payment Date
+                            </p>
 
-                                    <i data-lucide="external-link"
-                                       class="w-3.5 h-3.5">
-                                    </i>
+                            <p class="value">
+                                {{ optional(
+                                    $payment->payment_date
+                                )->format('d M Y') ?: '—' }}
+                            </p>
+                        </div>
 
-                                    View Slip
 
-                                </a>
+                        <div>
+                            <p class="label">
+                                Amount Deposited
+                            </p>
 
-                            @else
-
-                                <span
-                                    class="text-xs text-red-600">
-                                    No payment slip uploaded.
-                                </span>
-
-                            @endif
-
+                            <p class="text-lg font-bold">
+                                Rs.
+                                {{ number_format(
+                                    $payment->amount,
+                                    2
+                                ) }}
+                            </p>
                         </div>
 
                     </div>
 
+                @endif
+
+
+                {{-- Payment Entry Form --}}
+                @if(
+                    !$payment ||
+                    $payment->status !== 'approved'
+                )
+
+                    <div class="border-t
+                                bg-gray-50 p-4">
+
+                        <form
+                            method="POST"
+                            enctype="multipart/form-data"
+                            action="{{ route(
+                                'admin.fee-payments.update-details',
+                                $voucher
+                            ) }}">
+
+                            @csrf
+                            @method('PATCH')
+
+
+                            <div class="grid
+                                        grid-cols-1
+                                        md:grid-cols-2
+                                        lg:grid-cols-4 gap-3">
+
+
+                                {{-- Slip --}}
+                                <div>
+
+                                    <label class="form-label">
+                                        Deposit Slip No. *
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        name="deposit_slip_no"
+                                        required
+                                        value="{{ old(
+                                            'deposit_slip_no',
+                                            $payment?->deposit_slip_no
+                                        ) }}"
+                                        class="form-input"
+                                        placeholder="Bank slip number">
+
+                                </div>
+
+
+                                {{-- Transaction --}}
+                                <div>
+
+                                    <label class="form-label">
+                                        Bank Transaction No.
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        name="bank_transaction_no"
+                                        value="{{ old(
+                                            'bank_transaction_no',
+                                            $payment?->bank_transaction_no
+                                        ) }}"
+                                        class="form-input"
+                                        placeholder="Reference / transaction no.">
+
+                                </div>
+
+
+                                {{-- Payment Date --}}
+                                <div>
+
+                                    <label class="form-label">
+                                        Payment Date *
+                                    </label>
+
+                                    <input
+                                        type="date"
+                                        name="payment_date"
+                                        required
+                                        value="{{ old(
+                                            'payment_date',
+                                            optional(
+                                                $payment?->payment_date
+                                            )->format('Y-m-d')
+                                        ) }}"
+                                        class="form-input">
+
+                                </div>
+
+
+                                {{-- Amount --}}
+                                <div>
+
+                                    <label class="form-label">
+                                        Amount Deposited *
+                                    </label>
+
+                                    <input
+                                        type="number"
+                                        name="amount"
+                                        step="0.01"
+                                        min="0.01"
+                                        required
+                                        value="{{ old(
+                                            'amount',
+                                            $payment?->amount
+                                            ?? $voucher->amount
+                                        ) }}"
+                                        class="form-input
+                                               font-semibold">
+
+                                    <p class="text-[10px]
+                                              text-gray-400 mt-1">
+                                        Voucher:
+                                        Rs.
+                                        {{ number_format(
+                                            $voucher->amount,
+                                            2
+                                        ) }}
+                                    </p>
+
+                                </div>
+
+
+                                {{-- Payment Method --}}
+                                <div>
+
+                                    <label class="form-label">
+                                        Payment Method
+                                    </label>
+
+                                    <select
+                                        name="payment_method"
+                                        class="form-input">
+
+                                        <option value="bank">
+                                            Bank Deposit
+                                        </option>
+
+                                        <option value="cash"
+                                            @selected(
+                                                old(
+                                                    'payment_method',
+                                                    $payment?->payment_method
+                                                ) === 'cash'
+                                            )>
+                                            Cash
+                                        </option>
+
+                                    </select>
+
+                                </div>
+
+
+                                {{-- Slip Upload --}}
+                                <div class="md:col-span-2">
+
+                                    <label class="form-label">
+                                        Paid Bank Slip
+                                        @if(!$payment)
+                                            *
+                                        @endif
+                                    </label>
+
+                                    <input
+                                        type="file"
+                                        name="payment_slip"
+                                        accept=".jpg,.jpeg,.png,.pdf,.webp"
+                                        class="block w-full text-xs
+                                               border border-gray-300
+                                               rounded-lg
+                                               bg-white p-2">
+
+                                    <p class="text-[10px]
+                                              text-gray-500 mt-1">
+
+                                        JPG, PNG, WEBP or PDF —
+                                        maximum 5 MB.
+
+                                    </p>
+
+                                </div>
+
+
+                                {{-- Remarks --}}
+                                <div class="lg:col-span-2">
+
+                                    <label class="form-label">
+                                        Remarks
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        name="remarks"
+                                        value="{{ old(
+                                            'remarks'
+                                        ) }}"
+                                        class="form-input"
+                                        placeholder="Payment entry / correction remarks">
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="flex justify-end mt-4">
+
+                                <button
+                                    type="submit"
+                                    class="h-9 px-4 rounded-lg
+                                           bg-blue-600
+                                           hover:bg-blue-700
+                                           text-white text-sm
+                                           font-semibold
+                                           inline-flex
+                                           items-center gap-2">
+
+                                    <i data-lucide="save"
+                                       class="w-4 h-4">
+                                    </i>
+
+                                    Save Payment Details
+
+                                </button>
+
+                            </div>
+
+                        </form>
+
+                    </div>
+
+                @endif
+
+
+                {{-- Uploaded slip --}}
+                <div class="px-4 pb-4">
+
+                    <div class="border rounded-lg
+                                bg-gray-50 p-3
+                                flex items-center
+                                justify-between">
+
+                        <div>
+
+                            <p class="text-xs font-semibold">
+                                Paid Bank Slip
+                            </p>
+
+                            <p class="text-[11px]
+                                      text-gray-500">
+                                Compare this against the original physical slip.
+                            </p>
+
+                        </div>
+
+
+                        @if($payment?->payment_slip)
+
+                            <a
+                                href="{{ route(
+                                    'admin.fee-payments.slip',
+                                    $payment
+                                ) }}"
+                                target="_blank"
+                                class="h-8 px-3 rounded-lg
+                                       bg-blue-600
+                                       hover:bg-blue-700
+                                       text-white text-xs
+                                       font-semibold
+                                       inline-flex
+                                       items-center gap-1.5">
+
+                                <i data-lucide="external-link"
+                                   class="w-3.5 h-3.5">
+                                </i>
+
+                                View Slip
+
+                            </a>
+
+                        @else
+
+                            <span class="text-xs
+                                         font-medium
+                                         text-red-600">
+                                No slip uploaded
+                            </span>
+
+                        @endif
+
+                    </div>
+
                 </div>
 
             </div>
 
 
-            {{-- Bank --}}
-            <div class="bg-white border rounded-xl overflow-hidden">
+            {{-- Bank account --}}
+            <div class="bg-white border
+                        rounded-xl overflow-hidden">
 
-                <div class="px-4 py-3 border-b bg-gray-50">
+                <div class="px-4 py-3
+                            border-b bg-gray-50">
 
                     <h2 class="text-sm font-semibold">
-                        Expected Bank Account
+                        Expected Receiving Account
                     </h2>
 
                 </div>
 
-                <div class="p-4 grid grid-cols-1
-                            sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+                <div class="p-4 grid
+                            grid-cols-1
+                            sm:grid-cols-2
+                            lg:grid-cols-4 gap-4">
 
                     <div>
-                        <p class="detail-label">
-                            Bank
-                        </p>
+                        <p class="label">Bank</p>
 
-                        <p class="detail-value">
-                            {{ $voucher?->bank_name }}
+                        <p class="value">
+                            {{ $voucher->bank_name }}
                         </p>
                     </div>
 
+
                     <div class="lg:col-span-2">
-                        <p class="detail-label">
+
+                        <p class="label">
                             Account Title
                         </p>
 
-                        <p class="detail-value">
-                            {{ $voucher?->account_title }}
+                        <p class="value">
+                            {{ $voucher->account_title }}
                         </p>
+
                     </div>
 
+
                     <div>
-                        <p class="detail-label">
+
+                        <p class="label">
                             Account Number
                         </p>
 
-                        <p class="detail-value">
-                            {{ $voucher?->account_number }}
+                        <p class="value">
+                            {{ $voucher->account_number }}
                         </p>
+
                     </div>
 
+
                     <div class="lg:col-span-2">
-                        <p class="detail-label">
+
+                        <p class="label">
                             IBAN
                         </p>
 
-                        <p class="detail-value">
-                            {{ $voucher?->iban ?: '—' }}
+                        <p class="value">
+                            {{ $voucher->iban ?: '—' }}
                         </p>
+
                     </div>
 
                 </div>
 
             </div>
-
 
         </div>
 
@@ -440,17 +771,25 @@
         <div class="xl:col-span-4 space-y-4">
 
 
-            {{-- Approve / Reject --}}
-            @if($feePayment->status === 'pending')
+            {{-- Verify payment --}}
+            @if(
+                $payment &&
+                $payment->status !== 'approved'
+            )
 
-                <div class="bg-white border rounded-xl p-4">
+                <div class="bg-white border
+                            rounded-xl p-4">
 
                     <h2 class="text-sm font-semibold">
-                        Verification Decision
+                        Physical Verification
                     </h2>
 
-                    <p class="text-xs text-gray-500 mt-1">
-                        Verify the physical bank slip before making a decision.
+                    <p class="text-xs
+                              text-gray-500 mt-1">
+
+                        Check the original bank slip against
+                        the information above before approving.
+
                     </p>
 
 
@@ -459,27 +798,24 @@
                         method="POST"
                         action="{{ route(
                             'admin.fee-payments.approve',
-                            $feePayment
+                            $voucher
                         ) }}"
                         class="mt-4">
 
                         @csrf
 
-                        <label class="detail-label">
-                            Verification Remarks
-                        </label>
-
                         <textarea
                             name="remarks"
                             rows="3"
-                            class="w-full mt-1 rounded-lg
+                            class="w-full rounded-lg
                                    border border-gray-300
-                                   text-sm p-2.5"
-                            placeholder="Payment verification remarks..."></textarea>
+                                   p-2.5 text-sm"
+                            placeholder="Approval remarks..."></textarea>
+
 
                         <button
                             type="submit"
-                            class="mt-3 w-full h-10
+                            class="mt-2 w-full h-10
                                    rounded-lg
                                    bg-emerald-500
                                    hover:bg-emerald-600
@@ -498,7 +834,7 @@
                         method="POST"
                         action="{{ route(
                             'admin.fee-payments.reject',
-                            $feePayment
+                            $voucher
                         ) }}"
                         class="mt-3">
 
@@ -510,8 +846,9 @@
                             required
                             class="w-full rounded-lg
                                    border border-gray-300
-                                   text-sm p-2.5"
+                                   p-2.5 text-sm"
                             placeholder="Reason for rejection..."></textarea>
+
 
                         <button
                             type="submit"
@@ -533,36 +870,41 @@
             @endif
 
 
-            {{-- Admission Finalization --}}
-            @if($needsFinalization)
+            {{-- Payment approved --}}
+            @if(
+                $payment &&
+                $payment->status === 'approved'
+            )
 
-                <div class="bg-white border
-                            border-emerald-200
+                <div class="bg-emerald-50
+                            border border-emerald-200
                             rounded-xl p-4">
 
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-start gap-2">
 
-                        <div
-                            class="w-8 h-8 rounded-lg
-                                   bg-emerald-50
-                                   flex items-center
-                                   justify-center">
-
-                            <i data-lucide="badge-check"
-                               class="w-4 h-4
-                                      text-emerald-600">
-                            </i>
-
-                        </div>
+                        <i data-lucide="circle-check"
+                           class="w-5 h-5
+                                  text-emerald-600
+                                  shrink-0">
+                        </i>
 
                         <div>
 
-                            <h2 class="text-sm font-semibold">
-                                Finalize Admission
-                            </h2>
+                            <p class="text-sm
+                                      font-semibold
+                                      text-emerald-800">
 
-                            <p class="text-[11px] text-gray-500">
-                                Payment approved. Complete physical admission verification.
+                                Payment Verified
+
+                            </p>
+
+                            <p class="text-xs
+                                      text-emerald-700
+                                      mt-1">
+
+                                The deposited payment has been
+                                physically verified and approved.
+
                             </p>
 
                         </div>
@@ -570,95 +912,35 @@
                     </div>
 
 
-                    @if($isReadmission)
+                    @if(!$isHostel)
 
-                        <div
-                            class="mt-3 rounded-lg
-                                   bg-amber-50
-                                   border border-amber-200
-                                   p-3">
-
-                            <p class="text-xs
-                                      text-amber-800">
-
-                                This is a
-                                <strong>Readmission</strong>
-                                voucher. The existing admission
-                                number will remain unchanged.
-
-                            </p>
-
-                        </div>
-
-                    @endif
-
-
-                    <form
-                        method="POST"
-                        enctype="multipart/form-data"
-                        action="{{ route(
-                            'admin.fee-payments.finalize-admission',
-                            $feePayment
-                        ) }}"
-                        class="mt-4">
-
-                        @csrf
-
-
-                        <label class="detail-label">
-                            Student Photo *
-                        </label>
-
-                        <input
-                            type="file"
-                            name="student_photo"
-                            accept=".jpg,.jpeg,.png,.webp"
-                            required
-                            class="mt-1 block w-full text-xs
-                                   border border-gray-300
-                                   rounded-lg p-2">
-
-                        <p class="mt-1 text-[10px]
-                                  text-gray-500">
-                            JPG, PNG or WEBP. Maximum 2 MB.
-                        </p>
-
-
-                        <label class="detail-label block mt-4">
-                            Admission Remarks
-                        </label>
-
-                        <textarea
-                            name="admission_remarks"
-                            rows="3"
-                            class="w-full mt-1 rounded-lg
-                                   border border-gray-300
-                                   text-sm p-2.5"
-                            placeholder="Physical application/document verification remarks..."></textarea>
-
-
-                        <button
-                            type="submit"
-                            class="mt-3 w-full h-10
+                        <a
+                            href="{{ route(
+                                'admin.admissions.show',
+                                $admission
+                            ) }}"
+                            class="mt-3 w-full h-9
                                    rounded-lg
-                                   bg-blue-600
-                                   hover:bg-blue-700
-                                   text-white
-                                   text-sm font-semibold
+                                   bg-white
+                                   border
+                                   border-emerald-300
+                                   hover:bg-emerald-100
+                                   text-emerald-700
+                                   text-xs font-semibold
                                    inline-flex
                                    items-center
                                    justify-center
-                                   gap-2">
+                                   gap-1.5">
 
-                            <i data-lucide="credit-card"
+                            <i data-lucide="graduation-cap"
                                class="w-4 h-4">
                             </i>
 
-                            Finalize & Generate Student Card
+                            Go to Admission
 
-                        </button>
+                        </a>
 
-                    </form>
+                    @endif
 
                 </div>
 
@@ -666,107 +948,72 @@
 
 
             {{-- Hostel --}}
-            @if($isHostel && $feePayment->status === 'approved')
+            @if($isHostel && $payment?->status === 'approved')
 
-                <div class="bg-white border
-                            border-purple-200
+                <div class="bg-purple-50
+                            border border-purple-200
                             rounded-xl p-4">
 
-                    <div class="flex items-center gap-2">
+                    <p class="text-sm
+                              font-semibold
+                              text-purple-800">
 
-                        <i data-lucide="bed-double"
-                           class="w-5 h-5 text-purple-600">
-                        </i>
+                        Hostel Payment Complete
 
-                        <div>
+                    </p>
 
-                            <h2 class="text-sm font-semibold">
-                                Hostel Payment Verified
-                            </h2>
+                    <p class="text-xs
+                              text-purple-700 mt-1">
 
-                            <p class="text-xs text-gray-500">
-                                No admission/card generation is required.
-                            </p>
+                        Hostel payments do not create an admission
+                        or student card.
 
-                        </div>
-
-                    </div>
+                    </p>
 
                 </div>
 
             @endif
 
 
-            {{-- Existing Admission --}}
-            @if($admission)
+            {{-- Admission guidance --}}
+            @if(
+                !$isHostel &&
+                $payment?->status === 'approved'
+            )
 
-                <div class="bg-white border rounded-xl p-4">
+                <div class="bg-white border
+                            rounded-xl p-4">
 
-                    <p class="detail-label">
-                        Admission
+                    <p class="text-sm font-semibold">
+                        Next Step
                     </p>
 
-                    <p class="text-lg font-bold mt-1">
-                        {{ $admission->admission_no }}
-                    </p>
+                    @if($admission)
 
-                    <div class="mt-2">
+                        @if($admission->status === 'pending')
 
-                        <span
-                            class="inline-flex px-2.5 py-1
-                                   rounded-full text-xs
-                                   font-semibold
-                                   @if($admission->status === 'approved')
-                                       bg-emerald-50
-                                       text-emerald-700
-                                   @elseif($admission->status === 'rejected')
-                                       bg-red-50 text-red-700
-                                   @else
-                                       bg-amber-50
-                                       text-amber-700
-                                   @endif">
+                            <p class="text-xs
+                                      text-gray-500 mt-1">
 
-                            {{ ucfirst($admission->status) }}
+                                Open the admission record,
+                                verify the physical application
+                                and documents, then approve the
+                                admission.
 
-                        </span>
+                            </p>
 
-                    </div>
+                        @elseif($admission->status === 'approved')
 
-                    @if($admission->studentCards->count())
+                            <p class="text-xs
+                                      text-gray-500 mt-1">
 
-                        <div class="mt-3">
+                                Admission has been approved.
+                                Student card can now be generated
+                                from the Admissions page.
 
-                            @foreach(
-                                $admission->studentCards
-                                ->where('status', true)
-                                as $card
-                            )
+                            </p>
 
-                                <a
-                                    href="{{ route(
-                                        'admin.student-cards.print',
-                                        $card
-                                    ) }}"
-                                    target="_blank"
-                                    class="w-full h-8 rounded-lg
-                                           bg-gray-100
-                                           hover:bg-gray-200
-                                           text-gray-700
-                                           text-xs font-medium
-                                           inline-flex items-center
-                                           justify-center gap-1.5">
-
-                                    <i data-lucide="printer"
-                                       class="w-3.5 h-3.5">
-                                    </i>
-
-                                    Print {{ $card->card_no }}
-
-                                </a>
-
-                            @endforeach
-
-                        </div>
+                        @endif
 
                     @endif
 
@@ -785,19 +1032,78 @@
 
 @push('styles')
 <style>
-    .detail-label {
+
+    .label {
         font-size: 0.65rem;
+        line-height: 1rem;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        color: rgb(107 114 128);
         font-weight: 600;
+        color: rgb(107 114 128);
     }
 
-    .detail-value {
+    .value {
         margin-top: 0.2rem;
         font-size: 0.8125rem;
         color: rgb(31 41 55);
     }
+
+    .form-label {
+        display: block;
+        margin-bottom: 0.35rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: rgb(55 65 81);
+    }
+
+    .form-input {
+        display: block;
+        width: 100%;
+        height: 2.25rem;
+        border-radius: 0.5rem;
+        border: 1px solid rgb(209 213 219);
+        background: white;
+        padding: 0 0.75rem;
+        font-size: 0.8125rem;
+        outline: none;
+    }
+
+    .form-input:focus {
+        border-color: rgb(59 130 246);
+        box-shadow: 0 0 0 1px rgb(59 130 246);
+    }
+
+    .status-gray,
+    .status-amber,
+    .status-green,
+    .status-red {
+        display: inline-flex;
+        padding: 0.25rem 0.625rem;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    .status-gray {
+        background: rgb(243 244 246);
+        color: rgb(75 85 99);
+    }
+
+    .status-amber {
+        background: rgb(255 247 237);
+        color: rgb(180 83 9);
+    }
+
+    .status-green {
+        background: rgb(236 253 245);
+        color: rgb(4 120 87);
+    }
+
+    .status-red {
+        background: rgb(254 242 242);
+        color: rgb(185 28 28);
+    }
+
 </style>
 @endpush
 
@@ -805,9 +1111,11 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
     if (window.lucide) {
         lucide.createIcons();
     }
+
 });
 </script>
 @endpush
