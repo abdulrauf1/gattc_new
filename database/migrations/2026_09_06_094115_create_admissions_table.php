@@ -37,7 +37,8 @@ return new class extends Migration
             $table->string('email')->nullable();
 
             $table->text('address')->nullable();
-
+            $table->string('student_photo')->nullable();
+            
             $table->enum('status', [
                 'pending',
                 'approved',

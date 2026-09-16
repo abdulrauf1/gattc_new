@@ -2,17 +2,22 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class FeePayment extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'voucher_id',
-        'payment_slip',
+        'bank_transaction_no',
+        'deposit_slip_no',
         'payment_date',
+        'amount',
+        'payment_method',
+        'payment_slip',
         'status',
-        'verified_by',
         'verified_at',
         'remarks',
     ];
@@ -20,18 +25,28 @@ class FeePayment extends Model
     protected $casts = [
         'payment_date' => 'date',
         'verified_at' => 'datetime',
+        'amount' => 'decimal:2',
     ];
 
-    public function voucher(): BelongsTo
-    {
-        return $this->belongsTo(Voucher::class);
-    }
-
-    public function verifier(): BelongsTo
+    public function voucher()
     {
         return $this->belongsTo(
-            User::class,
-            'verified_by'
+            Voucher::class,
+            'voucher_id'
+        );
+    }
+
+    public function histories()
+    {
+        return $this->hasMany(
+            FeePaymentHistory::class
+        );
+    }
+
+    public function receipt()
+    {
+        return $this->hasOne(
+            FeeReceipt::class
         );
     }
 }

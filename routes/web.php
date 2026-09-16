@@ -346,6 +346,9 @@ Route::middleware(['auth'])
             'destroy',
         ]);
 
+        Route::get('/vouchers/{voucher}/print', [VoucherController::class, 'print'])
+        ->name('vouchers.print');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -376,44 +379,38 @@ Route::middleware(['auth'])
 
         Route::get('/fee-payments', [
             FeePaymentController::class,
-            'index',
+            'index'
         ])->name('fee-payments.index');
 
+        Route::get('/fee-payments/{feePayment}', [
+            FeePaymentController::class,
+            'show'
+        ])->name('fee-payments.show');
 
-        Route::get(
-            '/fee-payments/{feePayment}',
-            [
-                FeePaymentController::class,
-                'show',
-            ]
-        )->name('fee-payments.show');
+        Route::post('/fee-payments/{feePayment}/approve', [
+            FeePaymentController::class,
+            'approve'
+        ])->name('fee-payments.approve');
 
+        Route::post('/fee-payments/{feePayment}/reject', [
+            FeePaymentController::class,
+            'reject'
+        ])->name('fee-payments.reject');
 
-        Route::post(
-            '/fee-payments/{feePayment}/approve',
-            [
-                FeePaymentController::class,
-                'approve',
-            ]
-        )->name('fee-payments.approve');
+        Route::get('/fee-payments/{feePayment}/slip', [
+            FeePaymentController::class,
+            'slip'
+        ])->name('fee-payments.slip');
 
+        Route::post('/fee-payments/{feePayment}/finalize-admission', [
+            FeePaymentController::class,
+            'finalizeAdmission'
+        ])->name('fee-payments.finalize-admission');
 
-        Route::post(
-            '/fee-payments/{feePayment}/reject',
-            [
-                FeePaymentController::class,
-                'reject',
-            ]
-        )->name('fee-payments.reject');
-
-
-        Route::get(
-            '/fee-payments/{feePayment}/slip',
-            [
-                FeePaymentController::class,
-                'slip',
-            ]
-        )->name('fee-payments.slip');
+        Route::get('/student-cards/{studentCard}/print', [
+            FeePaymentController::class,
+            'printStudentCard'
+        ])->name('student-cards.print');
     });
 
 

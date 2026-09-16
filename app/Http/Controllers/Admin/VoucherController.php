@@ -16,7 +16,7 @@ class VoucherController extends Controller
 {
     /*
     |--------------------------------------------------------------------------
-    | Voucher List
+    | Voucher Index
     |--------------------------------------------------------------------------
     */
 
@@ -26,30 +26,23 @@ class VoucherController extends Controller
 
         $query = Voucher::query()
             ->with([
-                'course:id,title,course_type',
+                'course:id,title,course_type,duration,fee_amount,bank_account_id',
                 'session:id,title',
                 'admission:id,admission_no,status',
                 'bankAccount:id,account_title,account_number,purpose',
             ])
             ->latest('id');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Tabs
-        |--------------------------------------------------------------------------
-        */
-
-        if (in_array($type, ['admission', 'hostel', 'readmission'], true)) {
+        if (in_array($type, [
+            'admission',
+            'hostel',
+            'readmission'
+        ], true)) {
             $query->where('voucher_type', $type);
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Search
-        |--------------------------------------------------------------------------
-        */
-
         if ($request->filled('search')) {
+
             $search = trim($request->search);
 
             $query->where(function ($q) use ($search) {
@@ -60,41 +53,29 @@ class VoucherController extends Controller
                     ->orWhere('cnic', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")
                     ->orWhereHas('admission', function ($admission) use ($search) {
-                        $admission
-                            ->where('admission_no', 'like', "%{$search}%");
+                        $admission->where(
+                            'admission_no',
+                            'like',
+                            "%{$search}%"
+                        );
                     });
             });
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Status Filter
-        |--------------------------------------------------------------------------
-        */
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Course Filter
-        |--------------------------------------------------------------------------
-        */
-
         if ($request->filled('course_id')) {
-            $query->where('course_id', $request->course_id);
+            $query->where(
+                'course_id',
+                $request->course_id
+            );
         }
 
         $vouchers = $query
             ->paginate(15)
             ->withQueryString();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Tab Statistics
-        |--------------------------------------------------------------------------
-        */
 
         $totalVouchers = Voucher::count();
 
@@ -113,42 +94,29 @@ class VoucherController extends Controller
             'readmission'
         )->count();
 
-        $generatedVouchers = Voucher::where(
-            'status',
-            'generated'
-        )->count();
-
-        $paidVouchers = Voucher::where(
-            'status',
-            'paid'
-        )->count();
-
-        $cancelledVouchers = Voucher::where(
-            'status',
-            'cancelled'
-        )->count();
-
-        $courses = Course::where('status', true)
+        $courses = Course::query()
+            ->where('status', true)
             ->orderBy('title')
             ->get();
 
-        return view('admin.vouchers.index', compact(
-            'vouchers',
-            'courses',
-            'type',
-            'totalVouchers',
-            'admissionVouchers',
-            'hostelVouchers',
-            'readmissionVouchers',
-            'generatedVouchers',
-            'paidVouchers',
-            'cancelledVouchers'
-        ));
+        return view(
+            'admin.vouchers.index',
+            compact(
+                'vouchers',
+                'courses',
+                'type',
+                'totalVouchers',
+                'admissionVouchers',
+                'hostelVouchers',
+                'readmissionVouchers'
+            )
+        );
     }
+
 
     /*
     |--------------------------------------------------------------------------
-    | Create Voucher
+    | Create
     |--------------------------------------------------------------------------
     */
 
@@ -156,7 +124,11 @@ class VoucherController extends Controller
     {
         $type = $request->get('type', 'admission');
 
-        if (!in_array($type, ['admission', 'hostel', 'readmission'], true)) {
+        if (!in_array($type, [
+            'admission',
+            'hostel',
+            'readmission'
+        ], true)) {
             $type = 'admission';
         }
 
@@ -164,20 +136,46 @@ class VoucherController extends Controller
             ->orderByDesc('opening_date')
             ->get();
 
+        /*
+        |--------------------------------------------------------------------------
+        | Courses
+        |--------------------------------------------------------------------------
+        |
+        | Load bank account because the course determines where
+        | the student's fee is deposited.
+        |
+        */
+
         $courses = Course::query()
             ->with('bankAccount')
             ->where('status', true)
-            ->orderBy('course_type')
+            ->orderByRaw("
+                CASE
+                    WHEN course_type = 'regular' THEN 1
+                    WHEN course_type = 'dit' THEN 2
+                    WHEN course_type = 'private' THEN 3
+                    ELSE 4
+                END
+            ")
             ->orderBy('title')
             ->get();
 
-        $hostelAccount = BankAccount::where(
-            'purpose',
-            'like',
-            '%Hostel%'
-        )
+        /*
+        |--------------------------------------------------------------------------
+        | Hostel Account
+        |--------------------------------------------------------------------------
+        */
+
+        $hostelAccount = BankAccount::query()
+            ->where('purpose', 'like', '%Hostel%')
             ->where('status', true)
             ->first();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Existing Admissions
+        |--------------------------------------------------------------------------
+        */
 
         $admissions = Admission::query()
             ->with([
@@ -188,18 +186,22 @@ class VoucherController extends Controller
             ->limit(100)
             ->get();
 
-        return view('admin.vouchers.create', compact(
-            'type',
-            'sessions',
-            'courses',
-            'hostelAccount',
-            'admissions'
-        ));
+        return view(
+            'admin.vouchers.create',
+            compact(
+                'type',
+                'sessions',
+                'courses',
+                'hostelAccount',
+                'admissions'
+            )
+        );
     }
+
 
     /*
     |--------------------------------------------------------------------------
-    | Store Voucher
+    | Store
     |--------------------------------------------------------------------------
     */
 
@@ -207,15 +209,17 @@ class VoucherController extends Controller
     {
         $voucherType = $request->input('voucher_type');
 
-        if (!in_array(
-            $voucherType,
-            ['admission', 'hostel', 'readmission'],
-            true
-        )) {
+        if (!in_array($voucherType, [
+            'admission',
+            'hostel',
+            'readmission'
+        ], true)) {
+
             return back()
                 ->withInput()
                 ->withErrors([
-                    'voucher_type' => 'Invalid voucher type.',
+                    'voucher_type' =>
+                        'Invalid voucher type.'
                 ]);
         }
 
@@ -226,12 +230,13 @@ class VoucherController extends Controller
         */
 
         $rules = [
+
             'voucher_type' => [
                 'required',
                 Rule::in([
                     'admission',
                     'hostel',
-                    'readmission',
+                    'readmission'
                 ]),
             ],
 
@@ -306,9 +311,10 @@ class VoucherController extends Controller
             ],
         ];
 
+
         /*
         |--------------------------------------------------------------------------
-        | Admission / Readmission
+        | Admission
         |--------------------------------------------------------------------------
         */
 
@@ -324,6 +330,13 @@ class VoucherController extends Controller
                 'exists:courses,id',
             ];
         }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Readmission
+        |--------------------------------------------------------------------------
+        */
 
         if ($voucherType === 'readmission') {
 
@@ -343,6 +356,7 @@ class VoucherController extends Controller
             ];
         }
 
+
         /*
         |--------------------------------------------------------------------------
         | Hostel
@@ -350,17 +364,20 @@ class VoucherController extends Controller
         */
 
         if ($voucherType === 'hostel') {
+
             $rules['admission_id'] = [
                 'nullable',
                 'exists:admissions,id',
             ];
         }
 
+
         $validated = $request->validate($rules);
+
 
         /*
         |--------------------------------------------------------------------------
-        | Transaction
+        | Database Transaction
         |--------------------------------------------------------------------------
         */
 
@@ -371,8 +388,9 @@ class VoucherController extends Controller
 
             $admission = null;
             $course = null;
-            $bankAccount = null;
             $session = null;
+            $bankAccount = null;
+
 
             /*
             |--------------------------------------------------------------------------
@@ -387,33 +405,38 @@ class VoucherController extends Controller
                 );
 
                 $course = Course::with('bankAccount')
-                    ->findOrFail($validated['course_id']);
+                    ->findOrFail(
+                        $validated['course_id']
+                    );
 
                 /*
-                | Course must have its bank account.
+                |--------------------------------------------------------------------------
+                | IMPORTANT:
+                | Course controls the receiving bank account.
+                |--------------------------------------------------------------------------
                 */
 
                 if (!$course->bankAccount) {
+
                     throw new \RuntimeException(
-                        'The selected course does not have a bank account assigned.'
+                        'The selected course does not have a bank account assigned. ' .
+                        'Please assign the correct BOK account to this course first.'
                     );
                 }
 
                 $bankAccount = $course->bankAccount;
 
+
                 /*
                 |--------------------------------------------------------------------------
-                | Create Admission Immediately
+                | Create Pending Admission
                 |--------------------------------------------------------------------------
-                |
-                | IMPORTANT:
-                | Admin-generated admission voucher creates the
-                | admission immediately with PENDING status.
-                |
                 */
 
                 $admission = Admission::create([
-                    'admission_no' => $this->generateAdmissionNo(),
+
+                    'admission_no' =>
+                        $this->generateAdmissionNo(),
 
                     'admission_session_id' =>
                         $session->id,
@@ -445,13 +468,20 @@ class VoucherController extends Controller
                     'address' =>
                         $validated['address'] ?? null,
 
-                    'status' =>
-                        'pending',
+                    /*
+                    |--------------------------------------------------------------------------
+                    | New admission is PENDING until admin verifies
+                    | physical application and deposited slip.
+                    |--------------------------------------------------------------------------
+                    */
+
+                    'status' => 'pending',
 
                     'remarks' =>
                         'Admission created by administration while generating voucher.',
                 ]);
             }
+
 
             /*
             |--------------------------------------------------------------------------
@@ -466,9 +496,12 @@ class VoucherController extends Controller
                 );
 
                 $course = Course::with('bankAccount')
-                    ->findOrFail($validated['course_id']);
+                    ->findOrFail(
+                        $validated['course_id']
+                    );
 
                 if (!$course->bankAccount) {
+
                     throw new \RuntimeException(
                         'The selected course does not have a bank account assigned.'
                     );
@@ -476,12 +509,15 @@ class VoucherController extends Controller
 
                 $bankAccount = $course->bankAccount;
 
-                $session = !empty($validated['admission_session_id'])
+                $session = !empty(
+                    $validated['admission_session_id']
+                )
                     ? AdmissionSession::find(
                         $validated['admission_session_id']
                     )
                     : $admission->session;
             }
+
 
             /*
             |--------------------------------------------------------------------------
@@ -491,30 +527,30 @@ class VoucherController extends Controller
 
             elseif ($voucherType === 'hostel') {
 
-                $bankAccount = BankAccount::where(
-                    'purpose',
-                    'like',
-                    '%Hostel%'
-                )
+                $bankAccount = BankAccount::query()
+                    ->where('purpose', 'like', '%Hostel%')
                     ->where('status', true)
                     ->first();
 
                 if (!$bankAccount) {
+
                     throw new \RuntimeException(
                         'Active Hostel bank account was not found.'
                     );
                 }
 
                 /*
-                | Hostel does NOT create a new admission.
+                | Hostel voucher never creates a new admission.
                 */
 
                 if (!empty($validated['admission_id'])) {
+
                     $admission = Admission::find(
                         $validated['admission_id']
                     );
                 }
             }
+
 
             /*
             |--------------------------------------------------------------------------
@@ -522,7 +558,9 @@ class VoucherController extends Controller
             |--------------------------------------------------------------------------
             */
 
-            $voucherNo = $this->generateVoucherNo();
+            $voucherNo =
+                $this->generateVoucherNo();
+
 
             /*
             |--------------------------------------------------------------------------
@@ -591,7 +629,7 @@ class VoucherController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
-                | Snapshot Bank Information
+                | Bank Snapshot
                 |--------------------------------------------------------------------------
                 */
 
@@ -616,16 +654,20 @@ class VoucherController extends Controller
         });
 
         return redirect()
-            ->route('admin.vouchers.show', $voucher)
+            ->route(
+                'admin.vouchers.show',
+                $voucher
+            )
             ->with(
                 'success',
                 'Voucher generated successfully.'
             );
     }
 
+
     /*
     |--------------------------------------------------------------------------
-    | Voucher Details
+    | Show
     |--------------------------------------------------------------------------
     */
 
@@ -645,35 +687,44 @@ class VoucherController extends Controller
         );
     }
 
+
     /*
     |--------------------------------------------------------------------------
-    | Delete Voucher
+    | Print
+    |--------------------------------------------------------------------------
+    */
+
+    public function print(Voucher $voucher)
+    {
+        $voucher->load([
+            'session',
+            'course.category',
+            'bankAccount',
+            'admission',
+        ]);
+
+        return view(
+            'admin.vouchers.print',
+            compact('voucher')
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delete
     |--------------------------------------------------------------------------
     */
 
     public function destroy(Voucher $voucher)
     {
-        /*
-        | Do not delete paid vouchers.
-        */
-
         if ($voucher->status === 'paid') {
+
             return back()->withErrors([
                 'voucher' =>
                     'Paid vouchers cannot be deleted.',
             ]);
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Delete Admission Created Only For This Voucher
-        |--------------------------------------------------------------------------
-        |
-        | We do NOT automatically delete the admission here.
-        | The admission is an official record and should remain
-        | for administrative tracking.
-        |
-        */
 
         $voucher->delete();
 
@@ -684,6 +735,7 @@ class VoucherController extends Controller
                 'Voucher deleted successfully.'
             );
     }
+
 
     /*
     |--------------------------------------------------------------------------
@@ -696,22 +748,32 @@ class VoucherController extends Controller
         $year = now()->format('Y');
 
         $lastVoucher = Voucher::query()
-            ->whereYear('created_at', $year)
+            ->whereYear(
+                'created_at',
+                $year
+            )
             ->latest('id')
             ->lockForUpdate()
             ->first();
 
         $number = $lastVoucher
-            ? ((int) substr($lastVoucher->voucher_no, -5)) + 1
+            ? ((int) substr(
+                $lastVoucher->voucher_no,
+                -5
+            )) + 1
             : 1;
 
-        return 'VCH-' . $year . '-' . str_pad(
-            $number,
-            5,
-            '0',
-            STR_PAD_LEFT
-        );
+        return 'VCH-' .
+            $year .
+            '-' .
+            str_pad(
+                $number,
+                5,
+                '0',
+                STR_PAD_LEFT
+            );
     }
+
 
     /*
     |--------------------------------------------------------------------------
@@ -724,20 +786,29 @@ class VoucherController extends Controller
         $year = now()->format('Y');
 
         $lastAdmission = Admission::query()
-            ->whereYear('created_at', $year)
+            ->whereYear(
+                'created_at',
+                $year
+            )
             ->latest('id')
             ->lockForUpdate()
             ->first();
 
         $number = $lastAdmission
-            ? ((int) substr($lastAdmission->admission_no, -5)) + 1
+            ? ((int) substr(
+                $lastAdmission->admission_no,
+                -5
+            )) + 1
             : 1;
 
-        return 'ADM-' . $year . '-' . str_pad(
-            $number,
-            5,
-            '0',
-            STR_PAD_LEFT
-        );
+        return 'ADM-' .
+            $year .
+            '-' .
+            str_pad(
+                $number,
+                5,
+                '0',
+                STR_PAD_LEFT
+            );
     }
 }

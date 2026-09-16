@@ -61,4 +61,12 @@ class Admission extends Model
             'id'
         );
     }
+
+    public function studentCards()
+    {
+        return $this->hasMany(
+            StudentCard::class,
+            'admission_id'
+        );
+    }
 }
