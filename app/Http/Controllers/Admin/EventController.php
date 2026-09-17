@@ -11,48 +11,58 @@ class EventController extends Controller
 {
     public function index(Request $request)
     {
-        $query =
-            Event::query()
-                ->orderByDesc('event_date');
+        $query = Event::query();
 
+        /*
+        |--------------------------------------------------------------------------
+        | Search
+        |--------------------------------------------------------------------------
+        | Your current events table does not contain:
+        | - short_description
+        | - location
+        |
+        | Therefore we only search the confirmed "title" column here.
+        |--------------------------------------------------------------------------
+        */
         if ($request->filled('search')) {
+            $search = trim($request->search);
 
-            $search =
-                trim($request->search);
-
-            $query->where(function ($q) use ($search) {
-
-                $q->where(
-                    'title',
-                    'like',
-                    "%{$search}%"
-                )
-                ->orWhere(
-                    'location',
-                    'like',
-                    "%{$search}%"
-                );
-            });
+            $query->where('title', 'like', "%{$search}%");
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Status Filter
+        |--------------------------------------------------------------------------
+        */
         if ($request->filled('status')) {
-
-            $query->where(
-                'status',
-                (bool) $request->status
-            );
+            $query->where('status', (bool) $request->status);
         }
 
-        $events =
-            $query
-                ->paginate(15)
-                ->withQueryString();
+        $events = $query
+            ->latest('event_date')
+            ->paginate(12)
+            ->withQueryString();
 
-        return view(
-            'admin.events.index',
-            compact('events')
-        );
+        /*
+        |--------------------------------------------------------------------------
+        | Tab Counts
+        |--------------------------------------------------------------------------
+        */
+        $eventTotal = Event::count();
+
+        $eventPublished = Event::where('status', true)->count();
+
+        $eventHidden = Event::where('status', false)->count();
+
+        return view('admin.events.index', compact(
+            'events',
+            'eventTotal',
+            'eventPublished',
+            'eventHidden'
+        ));
     }
+
 
     public function create()
     {
@@ -60,6 +70,7 @@ class EventController extends Controller
             'admin.events.create'
         );
     }
+
 
     public function store(Request $request)
     {
@@ -94,16 +105,21 @@ class EventController extends Controller
                 ?? null,
 
             'status' =>
-                $request->boolean('status'),
+                $request->boolean(
+                    'status'
+                ),
         ]);
 
         return redirect()
-            ->route('admin.events.index')
+            ->route(
+                'admin.events.index'
+            )
             ->with(
                 'success',
                 'Event created successfully.'
             );
     }
+
 
     public function show(Event $event)
     {
@@ -113,6 +129,7 @@ class EventController extends Controller
         );
     }
 
+
     public function edit(Event $event)
     {
         return view(
@@ -120,6 +137,7 @@ class EventController extends Controller
             compact('event')
         );
     }
+
 
     public function update(
         Request $request,
@@ -157,7 +175,9 @@ class EventController extends Controller
                 ?? null,
 
             'status' =>
-                $request->boolean('status'),
+                $request->boolean(
+                    'status'
+                ),
         ]);
 
         return redirect()
@@ -169,6 +189,7 @@ class EventController extends Controller
                 'Event updated successfully.'
             );
     }
+
 
     public function destroy(Event $event)
     {
@@ -184,9 +205,11 @@ class EventController extends Controller
             );
     }
 
+
     private function validateEvent(
         Request $request
     ): array {
+
         return $request->validate([
 
             'title' => [
@@ -224,10 +247,12 @@ class EventController extends Controller
         ]);
     }
 
+
     private function uniqueSlug(
         string $title,
         ?int $ignoreId = null
     ): string {
+
         $base =
             Str::slug($title);
 
@@ -235,6 +260,7 @@ class EventController extends Controller
             $base;
 
         $counter = 1;
+
 
         while (
             Event::where(
@@ -258,6 +284,7 @@ class EventController extends Controller
                 '-' .
                 $counter++;
         }
+
 
         return $slug;
     }

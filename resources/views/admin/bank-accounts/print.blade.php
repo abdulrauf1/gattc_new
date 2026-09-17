@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
 
     <title>
-        {{ $bankAccount->account_title }}
+        GATTC Bank Account
     </title>
 
     <style>
@@ -21,38 +21,36 @@
         }
 
         body {
-            font-family: Arial, Helvetica, sans-serif;
             margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
             color: #111827;
         }
 
         .toolbar {
-            padding: 10px;
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid #ddd;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
 
         .toolbar button {
+            border: 0;
+            border-radius: 6px;
             background: #111827;
             color: white;
-            border: 0;
-            padding: 8px 15px;
-            border-radius: 6px;
+            padding: 9px 14px;
             cursor: pointer;
+            font-weight: 700;
         }
 
         .document {
-            border: 1px solid #222;
-            padding: 25px;
+            border: 1px solid #1f2937;
         }
 
         .header {
             text-align: center;
+            padding: 20px;
             border-bottom: 2px solid #111827;
-            padding-bottom: 15px;
-            margin-bottom: 25px;
         }
 
         .header h1 {
@@ -61,29 +59,37 @@
         }
 
         .header p {
-            margin: 6px 0 0;
-            font-size: 12px;
-            color: #555;
+            margin: 7px 0 0;
+            font-size: 11px;
+            color: #4b5563;
         }
 
         .purpose {
+            padding: 15px;
             text-align: center;
-            font-weight: bold;
-            font-size: 14px;
+            font-size: 12px;
+            font-weight: 700;
             text-transform: uppercase;
-            margin-bottom: 25px;
+            background: #f3f4f6;
+            border-bottom: 1px solid #d1d5db;
         }
 
         .row {
             display: grid;
             grid-template-columns: 180px 1fr;
-            border-bottom: 1px solid #ddd;
-            padding: 12px 0;
+            border-bottom: 1px solid #d1d5db;
+        }
+
+        .label,
+        .value {
+            padding: 13px 15px;
         }
 
         .label {
-            font-weight: bold;
-            color: #555;
+            font-weight: 700;
+            color: #4b5563;
+            background: #f9fafb;
+            border-right: 1px solid #d1d5db;
         }
 
         .value {
@@ -91,10 +97,10 @@
         }
 
         .footer {
-            margin-top: 45px;
-            font-size: 10px;
-            color: #666;
             text-align: center;
+            font-size: 9px;
+            color: #6b7280;
+            padding: 25px 15px;
         }
 
         @media print {
@@ -114,7 +120,7 @@
 <div class="toolbar">
 
     <strong>
-        GATTC Bank Account
+        GATTC Bank Account Information
     </strong>
 
     <button onclick="window.print()">
@@ -149,67 +155,102 @@
 
 
     <div class="row">
-        <div class="label">Bank</div>
+
+        <div class="label">
+            Bank
+        </div>
+
         <div class="value">
             {{ $bankAccount->bank_name }}
         </div>
+
     </div>
 
 
     <div class="row">
-        <div class="label">Account Title</div>
+
+        <div class="label">
+            Account Title
+        </div>
+
         <div class="value">
             {{ $bankAccount->account_title }}
         </div>
+
     </div>
 
 
     <div class="row">
-        <div class="label">Account Number</div>
+
+        <div class="label">
+            Account Number
+        </div>
+
         <div class="value">
             {{ $bankAccount->account_number }}
         </div>
+
     </div>
 
 
     <div class="row">
-        <div class="label">IBAN</div>
+
+        <div class="label">
+            IBAN
+        </div>
+
         <div class="value">
             {{ $bankAccount->iban ?: '—' }}
         </div>
+
     </div>
 
 
     <div class="row">
-        <div class="label">Branch</div>
+
+        <div class="label">
+            Branch
+        </div>
+
         <div class="value">
             {{ $bankAccount->branch_name ?: '—' }}
         </div>
+
     </div>
 
 
     <div class="row">
-        <div class="label">Branch Code</div>
+
+        <div class="label">
+            Branch Code
+        </div>
+
         <div class="value">
             {{ $bankAccount->branch_code ?: '—' }}
         </div>
+
     </div>
 
 
     <div class="row">
-        <div class="label">Status</div>
+
+        <div class="label">
+            Status
+        </div>
+
         <div class="value">
             {{ $bankAccount->status
                 ? 'Active'
                 : 'Inactive'
             }}
         </div>
+
     </div>
 
 
     <div class="footer">
 
-        Official GATTC bank account information
+        Official GATTC bank-account information.
 
     </div>
 

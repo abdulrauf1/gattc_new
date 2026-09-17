@@ -21,6 +21,7 @@ class BankAccountController extends Controller
         );
     }
 
+
     public function show(
         BankAccount $bankAccount
     ) {
@@ -29,6 +30,7 @@ class BankAccountController extends Controller
             compact('bankAccount')
         );
     }
+
 
     public function print(
         BankAccount $bankAccount

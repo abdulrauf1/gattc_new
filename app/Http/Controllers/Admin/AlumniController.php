@@ -6,58 +6,49 @@ use App\Http\Controllers\Controller;
 use App\Models\Alumni;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class AlumniController extends Controller
 {
     public function index(Request $request)
     {
-        $query =
-            Alumni::query()
-                ->latest('id');
+        $query = Alumni::query();
 
         if ($request->filled('search')) {
-
-            $search =
-                trim($request->search);
+            $search = trim($request->search);
 
             $query->where(function ($q) use ($search) {
-
-                $q->where(
-                    'name',
-                    'like',
-                    "%{$search}%"
-                )
-                ->orWhere(
-                    'email',
-                    'like',
-                    "%{$search}%"
-                )
-                ->orWhere(
-                    'course',
-                    'like',
-                    "%{$search}%"
-                );
+                $q->where('name', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%")
+                ->orWhere('phone', 'like', "%{$search}%")
+                ->orWhere('course', 'like', "%{$search}%")
+                ->orWhere('organization', 'like', "%{$search}%");
             });
         }
 
         if ($request->filled('status')) {
-
-            $query->where(
-                'status',
-                (bool) $request->status
-            );
+            $query->where('status', (bool) $request->status);
         }
 
-        $alumni =
-            $query
-                ->paginate(15)
-                ->withQueryString();
+        $alumnis = $query
+            ->latest('id')
+            ->paginate(12)
+            ->withQueryString();
 
-        return view(
-            'admin.alumni.index',
-            compact('alumni')
-        );
+        $alumniTotal = Alumni::count();
+
+        $alumniApproved = Alumni::where('status', true)->count();
+
+        $alumniNotApproved = Alumni::where('status', false)->count();
+
+        return view('admin.alumni.index', compact(
+            'alumnis',
+            'alumniTotal',
+            'alumniApproved',
+            'alumniNotApproved'
+        ));
     }
+
 
     public function create()
     {
@@ -66,12 +57,35 @@ class AlumniController extends Controller
         );
     }
 
-    public function store(Request $request)
+    public function show(Alumni $alumni)
     {
+        return view('admin.alumni.show', compact('alumni'));
+    }
+
+
+    public function store(
+        Request $request
+    ) {
         $validated =
             $this->validateAlumni(
                 $request
             );
+
+
+        $photo = null;
+
+
+        if ($request->hasFile('photo')) {
+
+            $photo =
+                $request
+                    ->file('photo')
+                    ->store(
+                        'alumni',
+                        'public'
+                    );
+        }
+
 
         Alumni::create([
 
@@ -103,16 +117,18 @@ class AlumniController extends Controller
                 ?? null,
 
             'photo' =>
-                $this->uploadPhoto(
-                    $request
-                ),
+                $photo,
 
             /*
-            | New alumni registrations wait for approval.
+            |--------------------------------------------------------------------------
+            | New admin-created record is active
+            |--------------------------------------------------------------------------
             */
+
             'status' =>
-                false,
+                true,
         ]);
+
 
         return redirect()
             ->route(
@@ -120,17 +136,20 @@ class AlumniController extends Controller
             )
             ->with(
                 'success',
-                'Alumni record added. It is awaiting approval.'
+                'Alumni profile added successfully.'
             );
     }
 
-    public function edit(Alumni $alumnus)
-    {
+
+    public function edit(
+        Alumni $alumnus
+    ) {
         return view(
             'admin.alumni.edit',
             compact('alumnus')
         );
     }
+
 
     public function update(
         Request $request,
@@ -142,8 +161,10 @@ class AlumniController extends Controller
                 $alumnus->id
             );
 
+
         $photo =
             $alumnus->photo;
+
 
         if ($request->hasFile('photo')) {
 
@@ -157,11 +178,16 @@ class AlumniController extends Controller
                     ->delete($photo);
             }
 
+
             $photo =
-                $this->uploadPhoto(
-                    $request
-                );
+                $request
+                    ->file('photo')
+                    ->store(
+                        'alumni',
+                        'public'
+                    );
         }
+
 
         $alumnus->update([
 
@@ -196,15 +222,17 @@ class AlumniController extends Controller
                 $photo,
         ]);
 
+
         return redirect()
             ->route(
                 'admin.alumni.index'
             )
             ->with(
                 'success',
-                'Alumni record updated successfully.'
+                'Alumni profile updated successfully.'
             );
     }
+
 
     public function approve(
         Alumni $alumnus
@@ -213,11 +241,13 @@ class AlumniController extends Controller
             'status' => true,
         ]);
 
+
         return back()->with(
             'success',
-            'Alumni profile approved.'
+            'Alumni profile approved and published.'
         );
     }
+
 
     public function reject(
         Alumni $alumnus
@@ -226,15 +256,18 @@ class AlumniController extends Controller
             'status' => false,
         ]);
 
+
         return back()->with(
             'success',
-            'Alumni profile rejected/unpublished.'
+            'Alumni profile unpublished.'
         );
     }
+
 
     public function destroy(
         Alumni $alumnus
     ) {
+
         if (
             $alumnus->photo &&
             Storage::disk('public')
@@ -242,10 +275,14 @@ class AlumniController extends Controller
         ) {
 
             Storage::disk('public')
-                ->delete($alumnus->photo);
+                ->delete(
+                    $alumnus->photo
+                );
         }
 
+
         $alumnus->delete();
+
 
         return redirect()
             ->route(
@@ -253,14 +290,16 @@ class AlumniController extends Controller
             )
             ->with(
                 'success',
-                'Alumni record deleted successfully.'
+                'Alumni profile deleted successfully.'
             );
     }
+
 
     private function validateAlumni(
         Request $request,
         ?int $ignoreId = null
     ): array {
+
         return $request->validate([
 
             'name' => [
@@ -273,9 +312,10 @@ class AlumniController extends Controller
                 'required',
                 'email',
                 'max:255',
-                'unique:alumni,email,' .
-                    ($ignoreId ?? 'NULL') .
-                    ',id',
+                Rule::unique(
+                    'alumni',
+                    'email'
+                )->ignore($ignoreId),
             ],
 
             'phone' => [
@@ -294,7 +334,10 @@ class AlumniController extends Controller
                 'required',
                 'integer',
                 'min:1950',
-                'max:' . (date('Y') + 2),
+                'max:' .
+                    (
+                        now()->year + 2
+                    ),
             ],
 
             'organization' => [
@@ -321,21 +364,7 @@ class AlumniController extends Controller
                 'mimes:jpg,jpeg,png,webp',
                 'max:4096',
             ],
+
         ]);
-    }
-
-    private function uploadPhoto(
-        Request $request
-    ): ?string {
-        if (!$request->hasFile('photo')) {
-            return null;
-        }
-
-        return $request
-            ->file('photo')
-            ->store(
-                'alumni',
-                'public'
-            );
     }
 }

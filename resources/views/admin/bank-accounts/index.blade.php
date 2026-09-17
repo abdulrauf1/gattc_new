@@ -160,10 +160,3 @@
 
 @endsection
 
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    if (window.lucide) lucide.createIcons();
-});
-</script>
-@endpushs

@@ -2,16 +2,32 @@
 
 use Illuminate\Support\Facades\Route;
 
+/*
+|--------------------------------------------------------------------------
+| Public Controllers
+|--------------------------------------------------------------------------
+*/
+
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PublicAdmissionController;
 
+/*
+|--------------------------------------------------------------------------
+| Admin Controllers
+|--------------------------------------------------------------------------
+*/
+
 use App\Http\Controllers\Admin\AdmissionController;
 use App\Http\Controllers\Admin\AdmissionSessionController;
+use App\Http\Controllers\Admin\AlumniController;
+use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\BankAccountController;
 use App\Http\Controllers\Admin\CourseCategoryController;
 use App\Http\Controllers\Admin\CourseController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\FeePaymentController;
+use App\Http\Controllers\Admin\GalleryController;
 use App\Http\Controllers\Admin\VoucherController;
 
 
@@ -20,6 +36,7 @@ use App\Http\Controllers\Admin\VoucherController;
 | PUBLIC WEBSITE
 |--------------------------------------------------------------------------
 */
+
 
 /*
 |--------------------------------------------------------------------------
@@ -62,7 +79,10 @@ Route::get('/courses/{course}', function (
     \App\Models\Course $course
 ) {
 
-    abort_unless($course->status, 404);
+    abort_unless(
+        $course->status,
+        404
+    );
 
     $course->load([
         'category',
@@ -129,7 +149,7 @@ Route::view(
 | Public News
 |--------------------------------------------------------------------------
 |
-| Keep /news for compatibility with existing links.
+| Keep /news for compatibility with old links.
 |
 */
 
@@ -156,16 +176,22 @@ Route::view(
     'public.alumni-register'
 )->name('public.alumni.register');
 
+
 /*
 |--------------------------------------------------------------------------
 | Public Contact
 |--------------------------------------------------------------------------
 */
 
-Route::view(
-    '/contact',
-    'public.contact'
-)->name('public.contact');
+Route::get('/contact', [
+    PublicContactController::class,
+    'create',
+])->name('public.contact');
+
+Route::post('/contact', [
+    PublicContactController::class,
+    'store',
+])->name('public.contact.store');
 
 
 /*
@@ -196,6 +222,9 @@ Route::get('/apply-online/voucher/{voucher}', [
 |--------------------------------------------------------------------------
 | PUBLIC PAYMENT SUBMISSION
 |--------------------------------------------------------------------------
+|
+| Student submits deposited payment details and paid-slip.
+|
 */
 
 Route::post('/payment-submit', [
@@ -206,49 +235,57 @@ Route::post('/payment-submit', [
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN PORTAL
+| AUTHENTICATED DASHBOARD COMPATIBILITY
 |--------------------------------------------------------------------------
-*/
-
-/*
-|--------------------------------------------------------------------------
-| Authenticated Dashboard
-|--------------------------------------------------------------------------
+|
+| Keep /dashboard so Laravel Breeze/default links continue to work.
+|
 */
 
 Route::get('/dashboard', function () {
-    return redirect()->route('admin.dashboard');
-})->middleware(['auth'])->name('dashboard');
+
+    return redirect()->route(
+        'admin.dashboard'
+    );
+
+})->middleware(['auth'])
+  ->name('dashboard');
 
 
+/*
+|--------------------------------------------------------------------------
+| ADMIN PORTAL
+|--------------------------------------------------------------------------
+*/
 
 Route::middleware(['auth'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
 
+
         /*
         |--------------------------------------------------------------------------
-        | Dashboard
+        | DASHBOARD
         |--------------------------------------------------------------------------
         */
 
         Route::get('/dashboard', [
             DashboardController::class,
-            'index'
+            'index',
         ])->name('dashboard');
 
 
         /*
         |--------------------------------------------------------------------------
-        | Course Management
+        | ACADEMICS
         |--------------------------------------------------------------------------
         */
 
-        Route::resource(
-            'courses',
-            CourseController::class
-        );
+
+        /*
+        | Course Categories
+        */
 
         Route::resource(
             'course-categories',
@@ -257,8 +294,18 @@ Route::middleware(['auth'])
 
 
         /*
+        | Courses
+        */
+
+        Route::resource(
+            'courses',
+            CourseController::class
+        );
+
+
+        /*
         |--------------------------------------------------------------------------
-        | Admission Sessions
+        | ADMISSION SESSIONS
         |--------------------------------------------------------------------------
         */
 
@@ -267,84 +314,118 @@ Route::middleware(['auth'])
             AdmissionSessionController::class
         );
 
+
         Route::post(
             '/admission-sessions/{admissionSession}/open',
             [
                 AdmissionSessionController::class,
-                'open'
+                'open',
             ]
-        )->name('admission-sessions.open');
+        )->name(
+            'admission-sessions.open'
+        );
+
 
         Route::post(
             '/admission-sessions/{admissionSession}/close',
             [
                 AdmissionSessionController::class,
-                'close'
+                'close',
             ]
-        )->name('admission-sessions.close');
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Bank Accounts
-        |--------------------------------------------------------------------------
-        */
-
-        Route::resource(
-            'bank-accounts',
-            BankAccountController::class
+        )->name(
+            'admission-sessions.close'
         );
 
 
         /*
         |--------------------------------------------------------------------------
-        | Admissions
+        | ADMISSIONS
         |--------------------------------------------------------------------------
+        */
+
+
+        /*
+        | Admissions listing
         */
 
         Route::get('/admissions', [
             AdmissionController::class,
-            'index'
+            'index',
         ])->name('admissions.index');
 
-        Route::get('/admissions/{admission}', [
-            AdmissionController::class,
-            'show'
-        ])->name('admissions.show');
+
+        /*
+        | Admission details
+        */
+
+        Route::get(
+            '/admissions/{admission}',
+            [
+                AdmissionController::class,
+                'show',
+            ]
+        )->name('admissions.show');
+
+
+        /*
+        | Update admission status manually
+        */
 
         Route::patch(
             '/admissions/{admission}/status',
             [
                 AdmissionController::class,
-                'updateStatus'
+                'updateStatus',
             ]
-        )->name('admissions.status');
+        )->name(
+            'admissions.status'
+        );
+
 
         /*
-        | Generate / reissue student card from Admissions page
+        | Generate/reissue Student Card
+        |
+        | Student cards are generated ONLY from Admissions.
         */
+
         Route::post(
             '/admissions/{admission}/student-card',
             [
                 AdmissionController::class,
-                'generateStudentCard'
+                'generateStudentCard',
             ]
-        )->name('admissions.student-card');
+        )->name(
+            'admissions.student-card'
+        );
 
 
         /*
         |--------------------------------------------------------------------------
-        | Vouchers
+        | VOUCHERS
         |--------------------------------------------------------------------------
+        */
+
+
+        /*
+        | Print three-copy challan
+        |
+        | Put this before resource routes.
         */
 
         Route::get(
             '/vouchers/{voucher}/print',
             [
                 VoucherController::class,
-                'print'
+                'print',
             ]
-        )->name('vouchers.print');
+        )->name(
+            'vouchers.print'
+        );
+
+
+        /*
+        | Generate/view/delete vouchers
+        */
 
         Route::resource(
             'vouchers',
@@ -354,7 +435,7 @@ Route::middleware(['auth'])
             'create',
             'store',
             'show',
-            'destroy'
+            'destroy',
         ]);
 
 
@@ -363,114 +444,174 @@ Route::middleware(['auth'])
         | PAYMENT VERIFICATION
         |--------------------------------------------------------------------------
         |
-        | IMPORTANT:
-        | This module is voucher-centric.
-        | Therefore all generated vouchers appear here,
-        | even when payment has not yet been submitted.
+        | Voucher-centric workflow:
+        |
+        | All vouchers appear here.
+        |
+        | No payment:
+        |     Not Submitted
+        |
+        | Payment exists:
+        |     Pending
+        |     Approved
+        |     Rejected
         |
         */
 
-        Route::get('/fee-payments', [
-            FeePaymentController::class,
-            'index'
-        ])->name('fee-payments.index');
 
         /*
-        | Open payment verification for a voucher.
-        | Works for both:
-        | - voucher without payment
-        | - voucher with existing payment
+        | All generated vouchers / payment verification
         */
+
+        Route::get(
+            '/fee-payments',
+            [
+                FeePaymentController::class,
+                'index',
+            ]
+        )->name(
+            'fee-payments.index'
+        );
+
+
+        /*
+        | Open payment verification for a voucher
+        */
+
         Route::get(
             '/fee-payments/voucher/{voucher}',
             [
                 FeePaymentController::class,
-                'showVoucher'
+                'showVoucher',
             ]
-        )->name('fee-payments.voucher');
+        )->name(
+            'fee-payments.voucher'
+        );
 
 
         /*
-        | Create or update deposited-payment information.
+        | Enter/update deposited payment information
         */
+
         Route::patch(
             '/fee-payments/voucher/{voucher}/details',
             [
                 FeePaymentController::class,
-                'updateDetails'
+                'updateDetails',
             ]
-        )->name('fee-payments.update-details');
+        )->name(
+            'fee-payments.update-details'
+        );
 
 
         /*
         | Approve payment
         */
+
         Route::post(
             '/fee-payments/voucher/{voucher}/approve',
             [
                 FeePaymentController::class,
-                'approve'
+                'approve',
             ]
-        )->name('fee-payments.approve');
+        )->name(
+            'fee-payments.approve'
+        );
 
 
         /*
         | Reject payment
         */
+
         Route::post(
             '/fee-payments/voucher/{voucher}/reject',
             [
                 FeePaymentController::class,
-                'reject'
+                'reject',
             ]
-        )->name('fee-payments.reject');
+        )->name(
+            'fee-payments.reject'
+        );
 
 
         /*
-        | View uploaded slip
+        | Open uploaded paid bank slip
         */
+
         Route::get(
             '/fee-payments/{feePayment}/slip',
             [
                 FeePaymentController::class,
-                'slip'
+                'slip',
             ]
-        )->name('fee-payments.slip');
+        )->name(
+            'fee-payments.slip'
+        );
 
 
         /*
         |--------------------------------------------------------------------------
-        | Student Cards
+        | STUDENT CARDS
         |--------------------------------------------------------------------------
+        |
+        | Printing only.
+        | Generation is handled from Admissions.
+        |
         */
 
         Route::get(
             '/student-cards/{studentCard}/print',
             [
                 AdmissionController::class,
-                'printStudentCard'
+                'printStudentCard',
             ]
-        )->name('student-cards.print');
+        )->name(
+            'student-cards.print'
+        );
 
 
-                
+        /*
+        |--------------------------------------------------------------------------
+        | WEBSITE MANAGEMENT
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/website-settings', [
+            WebsiteSettingController::class,
+            'index',
+        ])->name('website-settings.index');
+
+        Route::put('/website-settings', [
+            WebsiteSettingController::class,
+            'update',
+        ])->name('website-settings.update');
+
         /*
         |--------------------------------------------------------------------------
         | Gallery
         |--------------------------------------------------------------------------
         */
 
-        Route::resource(
-            'gallery',
-            GalleryController::class
-        )->parameters([
-            'gallery' => 'gallery'
-        ]);
+        /*
+        | Gallery image deletion must be available in addition
+        | to normal Gallery CRUD.
+        */
 
         Route::delete(
             '/gallery/{gallery}/images/{image}',
-            [GalleryController::class, 'destroyImage']
-        )->name('gallery.images.destroy');
+            [
+                GalleryController::class,
+                'destroyImage',
+            ]
+        )->name(
+            'gallery.images.destroy'
+        );
+
+
+        Route::resource(
+            'gallery',
+            GalleryController::class
+        );
 
 
         /*
@@ -501,51 +642,145 @@ Route::middleware(['auth'])
         |--------------------------------------------------------------------------
         | Alumni
         |--------------------------------------------------------------------------
+        |
+        | Add
+        | Edit
+        | Approve
+        | Reject/Unpublish
+        | Delete
+        |
         */
 
         Route::resource(
             'alumni',
             AlumniController::class
         )->except([
-            'show'
+            'show',
         ]);
+
+        Route::resource('alumni', AlumniController::class)->except(['admin.alumni.show']);
 
         Route::patch(
             '/alumni/{alumnus}/approve',
-            [AlumniController::class, 'approve']
-        )->name('alumni.approve');
+            [
+                AlumniController::class,
+                'approve',
+            ]
+        )->name(
+            'alumni.approve'
+        );
+
 
         Route::patch(
             '/alumni/{alumnus}/reject',
-            [AlumniController::class, 'reject']
-        )->name('alumni.reject');
+            [
+                AlumniController::class,
+                'reject',
+            ]
+        )->name(
+            'alumni.reject'
+        );
 
 
         /*
         |--------------------------------------------------------------------------
-        | Bank Accounts - View Only
+        | FINANCE
         |--------------------------------------------------------------------------
+        */
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Bank Accounts - VIEW ONLY
+        |--------------------------------------------------------------------------
+        |
+        | No create/store/edit/update/delete routes.
+        |
         */
 
         Route::get(
             '/bank-accounts',
-            [BankAccountController::class, 'index']
-        )->name('bank-accounts.index');
+            [
+                BankAccountController::class,
+                'index',
+            ]
+        )->name(
+            'bank-accounts.index'
+        );
+
 
         Route::get(
             '/bank-accounts/{bankAccount}',
-            [BankAccountController::class, 'show']
-        )->name('bank-accounts.show');
+            [
+                BankAccountController::class,
+                'show',
+            ]
+        )->name(
+            'bank-accounts.show'
+        );
+
 
         Route::get(
             '/bank-accounts/{bankAccount}/print',
-            [BankAccountController::class, 'print']
-        )->name('bank-accounts.print');
+            [
+                BankAccountController::class,
+                'print',
+            ]
+        )->name(
+            'bank-accounts.print'
+        );
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Contact Messages
+        |--------------------------------------------------------------------------
+        */
 
+        Route::get('/contact-messages', [
+            ContactMessageController::class,
+            'index',
+        ])->name('contact-messages.index');
+
+        Route::get('/contact-messages/{contactMessage}', [
+            ContactMessageController::class,
+            'show',
+        ])->name('contact-messages.show');
+
+        Route::patch('/contact-messages/{contactMessage}/read', [
+            ContactMessageController::class,
+            'markRead',
+        ])->name('contact-messages.read');
+
+        Route::patch('/contact-messages/{contactMessage}/unread', [
+            ContactMessageController::class,
+            'markUnread',
+        ])->name('contact-messages.unread');
+
+        Route::patch('/contact-messages/{contactMessage}/notes', [
+            ContactMessageController::class,
+            'updateNotes',
+        ])->name('contact-messages.notes');
+
+        Route::delete('/contact-messages/{contactMessage}', [
+            ContactMessageController::class,
+            'destroy',
+        ])->name('contact-messages.destroy');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Profile / Account
+        |--------------------------------------------------------------------------
+        */
+
+        /*
+        | No profile routes here because they remain outside
+        | the /admin prefix below.
+        */
 
     });
+
 
 /*
 |--------------------------------------------------------------------------
@@ -554,6 +789,7 @@ Route::middleware(['auth'])
 */
 
 Route::middleware(['auth'])->group(function () {
+
 
     Route::get('/profile', [
         \App\Http\Controllers\ProfileController::class,
@@ -571,6 +807,7 @@ Route::middleware(['auth'])->group(function () {
         \App\Http\Controllers\ProfileController::class,
         'destroy',
     ])->name('profile.destroy');
+
 });
 
 

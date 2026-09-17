@@ -68,96 +68,102 @@
                 Send Us a Message
             </h2>
 
-            <form
-                action="{{ route('public.contact.submit') }}"
-                method="POST"
-                class="mt-8 space-y-5"
-            >
+            <form method="POST"
+                action="{{ route('public.contact.store') }}"
+                class="space-y-4">
+
                 @csrf
 
-                <div class="grid gap-5 sm:grid-cols-2">
+                @if(session('success'))
+                    <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+                        {{ session('success') }}
+                    </div>
+                @endif
+
+                @if($errors->any())
+                    <div class="rounded-lg border border-red-200 bg-red-50 p-4">
+                        <ul class="list-disc pl-5 text-xs text-red-700">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
                     <div>
-                        <label class="mb-2 block font-bold text-slate-700">
-                            Full Name
+                        <label class="mb-1.5 block text-sm font-medium text-slate-700">
+                            Name *
                         </label>
 
-                        <input
-                            type="text"
+                        <input type="text"
                             name="name"
                             value="{{ old('name') }}"
                             required
-                            class="w-full rounded-xl border-slate-300 px-4 py-3 focus:border-emerald-500 focus:ring-emerald-500"
-                            placeholder="Your name"
-                        >
+                            class="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                            placeholder="Your name">
                     </div>
 
                     <div>
-                        <label class="mb-2 block font-bold text-slate-700">
-                            Email Address
+                        <label class="mb-1.5 block text-sm font-medium text-slate-700">
+                            Email *
                         </label>
 
-                        <input
-                            type="email"
+                        <input type="email"
                             name="email"
                             value="{{ old('email') }}"
                             required
-                            class="w-full rounded-xl border-slate-300 px-4 py-3 focus:border-emerald-500 focus:ring-emerald-500"
-                            placeholder="you@example.com"
-                        >
+                            class="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                            placeholder="you@example.com">
                     </div>
-                </div>
 
-                <div class="grid gap-5 sm:grid-cols-2">
                     <div>
-                        <label class="mb-2 block font-bold text-slate-700">
-                            Phone Number
+                        <label class="mb-1.5 block text-sm font-medium text-slate-700">
+                            Phone
                         </label>
 
-                        <input
-                            type="text"
+                        <input type="text"
                             name="phone"
                             value="{{ old('phone') }}"
-                            class="w-full rounded-xl border-slate-300 px-4 py-3 focus:border-emerald-500 focus:ring-emerald-500"
-                            placeholder="03XX-XXXXXXX"
-                        >
+                            class="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                            placeholder="03XX-XXXXXXX">
                     </div>
 
                     <div>
-                        <label class="mb-2 block font-bold text-slate-700">
+                        <label class="mb-1.5 block text-sm font-medium text-slate-700">
                             Subject
                         </label>
 
-                        <input
-                            type="text"
+                        <input type="text"
                             name="subject"
                             value="{{ old('subject') }}"
-                            required
-                            class="w-full rounded-xl border-slate-300 px-4 py-3 focus:border-emerald-500 focus:ring-emerald-500"
-                            placeholder="Message subject"
-                        >
+                            class="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                            placeholder="How can we help?">
                     </div>
+
                 </div>
 
                 <div>
-                    <label class="mb-2 block font-bold text-slate-700">
-                        Message
+                    <label class="mb-1.5 block text-sm font-medium text-slate-700">
+                        Message *
                     </label>
 
-                    <textarea
-                        name="message"
-                        rows="6"
-                        required
-                        class="w-full rounded-xl border-slate-300 px-4 py-3 focus:border-emerald-500 focus:ring-emerald-500"
-                        placeholder="Write your message..."
-                    >{{ old('message') }}</textarea>
+                    <textarea name="message"
+                            rows="7"
+                            required
+                            class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm leading-6"
+                            placeholder="Write your message...">{{ old('message') }}</textarea>
                 </div>
 
-                <button
-                    type="submit"
-                    class="rounded-full bg-emerald-600 px-8 py-4 font-black text-white shadow-lg transition hover:bg-emerald-700"
-                >
-                    Send Message →
+                <button type="submit"
+                        class="inline-flex h-11 items-center gap-2 rounded-lg bg-emerald-500 px-5 text-sm font-medium text-white hover:bg-emerald-600">
+
+                    <i data-lucide="send" class="h-4 w-4"></i>
+                    Send Message
+
                 </button>
+
             </form>
         </div>
     </div>

@@ -11,48 +11,40 @@ class AnnouncementController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Announcement::query()
-            ->latest('published_at')
-            ->latest('id');
+        $query = Announcement::query();
 
         if ($request->filled('search')) {
-
-            $search =
-                trim($request->search);
+            $search = trim($request->search);
 
             $query->where(function ($q) use ($search) {
-
-                $q->where(
-                    'title',
-                    'like',
-                    "%{$search}%"
-                )
-                ->orWhere(
-                    'content',
-                    'like',
-                    "%{$search}%"
-                );
+                $q->where('title', 'like', "%{$search}%")
+                ->orWhere('content', 'like', "%{$search}%");
             });
         }
 
         if ($request->filled('status')) {
-
-            $query->where(
-                'status',
-                (bool) $request->status
-            );
+            $query->where('status', (bool) $request->status);
         }
 
-        $announcements =
-            $query
-                ->paginate(15)
-                ->withQueryString();
+        $announcements = $query
+            ->latest('id')
+            ->paginate(12)
+            ->withQueryString();
 
-        return view(
-            'admin.announcements.index',
-            compact('announcements')
-        );
+        $announcementTotal = Announcement::count();
+
+        $announcementPublished = Announcement::where('status', true)->count();
+
+        $announcementHidden = Announcement::where('status', false)->count();
+
+        return view('admin.announcements.index', compact(
+            'announcements',
+            'announcementTotal',
+            'announcementPublished',
+            'announcementHidden'
+        ));
     }
+
 
     public function create()
     {
@@ -60,6 +52,7 @@ class AnnouncementController extends Controller
             'admin.announcements.create'
         );
     }
+
 
     public function store(Request $request)
     {
@@ -82,7 +75,9 @@ class AnnouncementController extends Controller
                 $validated['content'],
 
             'status' =>
-                $request->boolean('status'),
+                $request->boolean(
+                    'status'
+                ),
 
             'published_at' =>
                 $validated['published_at']
@@ -99,6 +94,7 @@ class AnnouncementController extends Controller
             );
     }
 
+
     public function show(
         Announcement $announcement
     ) {
@@ -108,6 +104,7 @@ class AnnouncementController extends Controller
         );
     }
 
+
     public function edit(
         Announcement $announcement
     ) {
@@ -116,6 +113,7 @@ class AnnouncementController extends Controller
             compact('announcement')
         );
     }
+
 
     public function update(
         Request $request,
@@ -141,7 +139,9 @@ class AnnouncementController extends Controller
                 $validated['content'],
 
             'status' =>
-                $request->boolean('status'),
+                $request->boolean(
+                    'status'
+                ),
 
             'published_at' =>
                 $validated['published_at']
@@ -158,6 +158,7 @@ class AnnouncementController extends Controller
             );
     }
 
+
     public function destroy(
         Announcement $announcement
     ) {
@@ -173,9 +174,11 @@ class AnnouncementController extends Controller
             );
     }
 
+
     private function validateAnnouncement(
         Request $request
     ): array {
+
         return $request->validate([
 
             'title' => [
@@ -201,10 +204,12 @@ class AnnouncementController extends Controller
         ]);
     }
 
+
     private function uniqueSlug(
         string $title,
         ?int $ignoreId = null
     ): string {
+
         $base =
             Str::slug($title);
 
@@ -212,6 +217,7 @@ class AnnouncementController extends Controller
             $base;
 
         $counter = 1;
+
 
         while (
             Announcement::where(
@@ -235,6 +241,7 @@ class AnnouncementController extends Controller
                 '-' .
                 $counter++;
         }
+
 
         return $slug;
     }

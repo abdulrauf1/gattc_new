@@ -1,38 +1,40 @@
 @extends('layouts.admin')
 
-@section('title', 'Gallery')
-@section('page-heading', 'Gallery')
+@section('title', 'Announcements')
+@section('page-heading', 'Announcements')
 
 @section('content')
 <div class="space-y-4">
 
-    {{-- Page Header --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
         <div>
             <div class="flex items-center gap-2">
+
                 <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100">
-                    <i data-lucide="images" class="h-5 w-5 text-slate-700"></i>
+                    <i data-lucide="megaphone" class="h-5 w-5 text-slate-700"></i>
                 </div>
 
                 <div>
                     <h1 class="text-base font-semibold text-slate-900 sm:text-lg">
-                        Gallery
+                        Announcements
                     </h1>
                     <p class="text-xs text-slate-500">
-                        Manage website galleries and images.
+                        Manage public notices and announcements.
                     </p>
                 </div>
+
             </div>
         </div>
 
-        <a href="{{ route('admin.gallery.create') }}"
+        <a href="{{ route('admin.announcements.create') }}"
            class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-800">
             <i data-lucide="plus" class="h-4 w-4"></i>
-            Add Gallery
+            Add Announcement
         </a>
+
     </div>
 
-    {{-- Main Voucher-style container --}}
     <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
 
         {{-- Tabs --}}
@@ -46,7 +48,7 @@
                         : 'text-slate-600 hover:text-slate-900' }}">
                     All
                     <span class="ml-1 text-xs text-slate-500">
-                        ({{ $galleryTotal }})
+                        ({{ $announcementTotal }})
                     </span>
                 </a>
 
@@ -57,7 +59,7 @@
                         : 'text-slate-600 hover:text-slate-900' }}">
                     Published
                     <span class="ml-1 text-xs text-slate-500">
-                        ({{ $galleryPublished }})
+                        ({{ $announcementPublished }})
                     </span>
                 </a>
 
@@ -68,18 +70,18 @@
                         : 'text-slate-600 hover:text-slate-900' }}">
                     Hidden
                     <span class="ml-1 text-xs text-slate-500">
-                        ({{ $galleryHidden }})
+                        ({{ $announcementHidden }})
                     </span>
                 </a>
 
             </div>
         </div>
 
-        {{-- Filters --}}
+        {{-- Filter --}}
         
         <div class="p-3 border-b border-gray-200">
 
-            <form method="GET" action="{{ route('admin.gallery.index') }}">
+            <form method="GET" action="{{ route('admin.announcements.index') }}">
 
                 <div class="flex flex-col lg:flex-row gap-2">
 
@@ -97,7 +99,7 @@
                                 type="text"
                                 name="search"
                                 value="{{ request('search') }}"
-                                placeholder="Search gallery..."
+                                placeholder="Search announcement, title or content..."
                                 class="w-full h-9 rounded-lg border border-gray-300
                                        pl-9 pr-3 text-sm
                                        focus:border-blue-500
@@ -115,12 +117,9 @@
                                    px-3 text-sm">
 
                             <option value="">All Status</option>
-                            <option value="1" @selected(request('status') === '1')>
-                                Published
-                            </option>
-                            <option value="0" @selected(request('status') === '0')>
-                                Hidden
-                            </option>
+                            <option value="1" @selected(request('status') === '1')>Published</option>
+                            <option value="0" @selected(request('status') === '0')>Hidden</option>
+
 
                         </select>
 
@@ -146,7 +145,7 @@
 
                     {{-- Reset --}}
                     <a
-                        href="{{ route('admin.gallery.index') }}"
+                        href="{{ route('admin.announcements.index') }}"
                         title="Reset filters"
                         class="h-9 w-9 rounded-lg
                                bg-gray-100 hover:bg-gray-200
@@ -164,110 +163,92 @@
         </div>
 
 
-        {{-- Desktop Table --}}
+        {{-- Table --}}
         <div class="hidden md:block">
+
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[850px] text-left">
+
+                <table class="w-full min-w-[900px] text-left">
 
                     <thead class="border-b border-slate-200 bg-slate-50">
                         <tr class="text-xs font-semibold text-slate-700">
-                            <th class="px-5 py-3">Gallery</th>
-                            <th class="px-4 py-3">Images</th>
+                            <th class="px-5 py-3">Announcement</th>
+                            <th class="px-4 py-3">Published</th>
                             <th class="px-4 py-3">Status</th>
-                            <th class="px-4 py-3">Created</th>
                             <th class="px-5 py-3 text-right">Action</th>
                         </tr>
                     </thead>
 
                     <tbody class="divide-y divide-slate-200">
 
-                        @forelse($galleries as $gallery)
+                        @forelse($announcements as $announcement)
 
-                            @php
-                                $firstImage = $gallery->images->first();
-                            @endphp
-
-                            <tr class="transition hover:bg-slate-50">
+                            <tr class="hover:bg-slate-50">
 
                                 <td class="px-5 py-3.5">
-                                    <div class="flex items-center gap-3">
+                                    <div class="max-w-[650px]">
+                                        <p class="text-sm font-semibold text-slate-900">
+                                            {{ $announcement->title }}
+                                        </p>
 
-                                        <div class="h-11 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                                            @if($firstImage)
-                                                <img src="{{ asset('storage/' . $firstImage->image) }}"
-                                                     alt="{{ $gallery->title }}"
-                                                     class="h-full w-full object-cover">
-                                            @else
-                                                <div class="flex h-full w-full items-center justify-center">
-                                                    <i data-lucide="image-off" class="h-4 w-4 text-slate-400"></i>
-                                                </div>
-                                            @endif
-                                        </div>
-
-                                        <div class="min-w-0">
-                                            <p class="truncate text-sm font-semibold text-slate-900">
-                                                {{ $gallery->title }}
-                                            </p>
-
-                                            <p class="mt-0.5 max-w-[380px] truncate text-xs text-slate-500">
-                                                {{ $gallery->description ?: 'No description' }}
-                                            </p>
-                                        </div>
+                                        <p class="mt-1 line-clamp-1 text-xs text-slate-500">
+                                            {{ strip_tags($announcement->content) }}
+                                        </p>
                                     </div>
                                 </td>
 
-                                <td class="px-4 py-3.5">
-                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-                                        <i data-lucide="images" class="h-3.5 w-3.5"></i>
-                                        {{ $gallery->images_count }}
-                                    </span>
+                                <td class="whitespace-nowrap px-4 py-3.5 text-sm text-slate-500">
+                                    {{ $announcement->published_at
+                                        ? $announcement->published_at->format('d M Y, h:i A')
+                                        : 'Not published' }}
                                 </td>
 
                                 <td class="px-4 py-3.5">
-                                    @if($gallery->status)
-                                        <span class="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
+
+                                    @if($announcement->status)
+                                        <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
                                             Published
                                         </span>
                                     @else
-                                        <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
                                             Hidden
                                         </span>
                                     @endif
-                                </td>
 
-                                <td class="whitespace-nowrap px-4 py-3.5 text-sm text-slate-500">
-                                    {{ $gallery->created_at?->format('d M Y') }}
                                 </td>
 
                                 <td class="px-5 py-3.5">
+
                                     <div class="flex justify-end gap-1.5">
 
-                                        <a href="{{ route('admin.gallery.show', $gallery) }}"
+                                        <a href="{{ route('admin.announcements.show', $announcement) }}"
                                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200"
                                            title="View">
                                             <i data-lucide="eye" class="h-4 w-4"></i>
                                         </a>
 
-                                        <a href="{{ route('admin.gallery.edit', $gallery) }}"
+                                        <a href="{{ route('admin.announcements.edit', $announcement) }}"
                                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200"
                                            title="Edit">
                                             <i data-lucide="pencil" class="h-4 w-4"></i>
                                         </a>
 
-                                        <form action="{{ route('admin.gallery.destroy', $gallery) }}"
+                                        <form action="{{ route('admin.announcements.destroy', $announcement) }}"
                                               method="POST"
-                                              onsubmit="return confirm('Delete this gallery and all its images?');">
+                                              onsubmit="return confirm('Delete this announcement?');">
+
                                             @csrf
                                             @method('DELETE')
 
                                             <button type="submit"
-                                                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
-                                                    title="Delete">
+                                                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100">
                                                 <i data-lucide="trash-2" class="h-4 w-4"></i>
                                             </button>
+
                                         </form>
 
                                     </div>
+
                                 </td>
 
                             </tr>
@@ -275,110 +256,97 @@
                         @empty
 
                             <tr>
-                                <td colspan="5" class="px-5 py-16 text-center">
-                                    <i data-lucide="images" class="mx-auto h-9 w-9 text-slate-300"></i>
+                                <td colspan="4" class="px-5 py-16 text-center">
+
+                                    <i data-lucide="megaphone" class="mx-auto h-9 w-9 text-slate-300"></i>
+
                                     <p class="mt-3 text-sm font-medium text-slate-700">
-                                        No galleries found
+                                        No announcements found
                                     </p>
-                                    <p class="mt-1 text-xs text-slate-400">
-                                        Add a gallery to get started.
-                                    </p>
+
                                 </td>
                             </tr>
 
                         @endforelse
 
                     </tbody>
+
                 </table>
+
             </div>
+
         </div>
 
         {{-- Mobile --}}
         <div class="divide-y divide-slate-200 md:hidden">
 
-            @forelse($galleries as $gallery)
-
-                @php
-                    $firstImage = $gallery->images->first();
-                @endphp
+            @forelse($announcements as $announcement)
 
                 <div class="p-4">
 
-                    <div class="flex gap-3">
-
-                        <div class="h-14 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                            @if($firstImage)
-                                <img src="{{ asset('storage/' . $firstImage->image) }}"
-                                     alt="{{ $gallery->title }}"
-                                     class="h-full w-full object-cover">
-                            @else
-                                <div class="flex h-full w-full items-center justify-center">
-                                    <i data-lucide="image-off" class="h-4 w-4 text-slate-400"></i>
-                                </div>
-                            @endif
-                        </div>
+                    <div class="flex items-start justify-between gap-3">
 
                         <div class="min-w-0 flex-1">
-                            <div class="flex items-start justify-between gap-2">
-                                <h3 class="truncate text-sm font-semibold text-slate-900">
-                                    {{ $gallery->title }}
-                                </h3>
+                            <h3 class="text-sm font-semibold text-slate-900">
+                                {{ $announcement->title }}
+                            </h3>
 
-                                @if($gallery->status)
-                                    <span class="shrink-0 rounded-full bg-blue-50 px-2 py-1 text-[10px] font-medium text-blue-700">
-                                        Published
-                                    </span>
-                                @else
-                                    <span class="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600">
-                                        Hidden
-                                    </span>
-                                @endif
-                            </div>
-
-                            <p class="mt-1 line-clamp-2 text-xs text-slate-500">
-                                {{ $gallery->description ?: 'No description' }}
+                            <p class="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
+                                {{ strip_tags($announcement->content) }}
                             </p>
 
                             <p class="mt-2 text-[11px] text-slate-400">
-                                {{ $gallery->images_count }} image(s)
-                                ·
-                                {{ $gallery->created_at?->format('d M Y') }}
+                                {{ $announcement->published_at
+                                    ? $announcement->published_at->format('d M Y, h:i A')
+                                    : 'Not published' }}
                             </p>
                         </div>
+
+                        @if($announcement->status)
+                            <span class="shrink-0 rounded-full bg-blue-50 px-2 py-1 text-[10px] font-medium text-blue-700">
+                                Published
+                            </span>
+                        @else
+                            <span class="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600">
+                                Hidden
+                            </span>
+                        @endif
+
                     </div>
 
                     <div class="mt-3 flex gap-2 border-t border-slate-100 pt-3">
 
-                        <a href="{{ route('admin.gallery.show', $gallery) }}"
+                        <a href="{{ route('admin.announcements.show', $announcement) }}"
                            class="flex-1 rounded-lg bg-slate-100 py-2 text-center text-xs font-medium text-slate-700">
                             View
                         </a>
 
-                        <a href="{{ route('admin.gallery.edit', $gallery) }}"
+                        <a href="{{ route('admin.announcements.edit', $announcement) }}"
                            class="flex-1 rounded-lg bg-slate-100 py-2 text-center text-xs font-medium text-slate-700">
                             Edit
                         </a>
 
                     </div>
+
                 </div>
 
             @empty
 
                 <div class="px-5 py-14 text-center">
-                    <p class="text-sm font-medium text-slate-700">No galleries found.</p>
+                    <p class="text-sm text-slate-600">No announcements found.</p>
                 </div>
 
             @endforelse
 
         </div>
 
-        {{-- Pagination --}}
-        @if($galleries->hasPages())
+        @if($announcements->hasPages())
             <div class="border-t border-slate-200 px-4 py-3">
-                {{ $galleries->links() }}
+                {{ $announcements->links() }}
             </div>
         @endif
 
     </div>
+
 </div>
 @endsection
