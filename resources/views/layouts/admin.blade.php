@@ -725,6 +725,21 @@
                     Account
                 </div>
 
+                {{-- Users --}}
+                @can('users.view')
+                    <a
+                        href="{{ route('admin.users.index') }}"
+                        class="{{ request()->routeIs('admin.users.*')
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}
+                            flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium"
+                    >
+                        <i data-lucide="users" class="h-4 w-4"></i>
+
+                        <span>User Accounts</span>
+                    </a>
+                @endcan
+
 
                 {{-- Profile --}}
                 <a

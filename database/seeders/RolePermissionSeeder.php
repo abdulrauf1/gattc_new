@@ -5,268 +5,347 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
-use Spatie\Permission\PermissionRegistrar;
 
 class RolePermissionSeeder extends Seeder
 {
     public function run(): void
     {
-        // Clear cached permissions and roles
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
-
         /*
         |--------------------------------------------------------------------------
-        | Permissions
+        | Define application permissions
         |--------------------------------------------------------------------------
         */
 
         $permissions = [
+
             // Dashboard
-            'view dashboard',
+            'dashboard.view',
+
+            // Users
+            'users.view',
+            'users.create',
+            'users.edit',
+            'users.delete',
+            'users.activate',
+            'users.password',
+
+            // Admission Sessions
+            'admission-sessions.view',
+            'admission-sessions.create',
+            'admission-sessions.edit',
+            'admission-sessions.delete',
+            'admission-sessions.open',
+            'admission-sessions.close',
 
             // Admissions
-            'view admissions',
-            'create admissions',
-            'edit admissions',
-            'delete admissions',
-            'verify admission fees',
-            'approve admissions',
-            'reject admissions',
+            'admissions.view',
+            'admissions.approve',
+            'admissions.reject',
+            'admissions.student-card',
 
-            // Admission sessions
-            'view admission sessions',
-            'create admission sessions',
-            'edit admission sessions',
-            'delete admission sessions',
-            'open admission sessions',
-            'close admission sessions',
+            // Vouchers
+            'vouchers.view',
+            'vouchers.create',
+            'vouchers.delete',
+            'vouchers.print',
+
+            // Payments
+            'payments.view',
+            'payments.update',
+            'payments.approve',
+            'payments.reject',
+
+            // Course Categories
+            'course-categories.view',
+            'course-categories.create',
+            'course-categories.edit',
+            'course-categories.delete',
 
             // Courses
-            'view courses',
-            'create courses',
-            'edit courses',
-            'delete courses',
+            'courses.view',
+            'courses.create',
+            'courses.edit',
+            'courses.delete',
 
-            // Course categories
-            'view course categories',
-            'create course categories',
-            'edit course categories',
-            'delete course categories',
+            // Bank Accounts
+            'bank-accounts.view',
+            'bank-accounts.create',
+            'bank-accounts.edit',
+            'bank-accounts.delete',
 
-            // Course batches
-            'view course batches',
-            'create course batches',
-            'edit course batches',
-            'delete course batches',
+            // Gallery
+            'gallery.view',
+            'gallery.create',
+            'gallery.edit',
+            'gallery.delete',
 
-            // Finance
-            'view fee types',
-            'create fee types',
-            'edit fee types',
-            'delete fee types',
+            // Announcements
+            'announcements.view',
+            'announcements.create',
+            'announcements.edit',
+            'announcements.delete',
 
-            'view bank accounts',
-            'create bank accounts',
-            'edit bank accounts',
-            'delete bank accounts',
+            // Events
+            'events.view',
+            'events.create',
+            'events.edit',
+            'events.delete',
 
-            'view fee configurations',
-            'create fee configurations',
-            'edit fee configurations',
-            'delete fee configurations',
+            // Alumni
+            'alumni.view',
+            'alumni.create',
+            'alumni.edit',
+            'alumni.delete',
+            'alumni.approve',
+            'alumni.reject',
 
-            'view vouchers',
-            'create vouchers',
-            'edit vouchers',
-            'verify payments',
-            'reject payments',
+            // Contact Messages
+            'contact-messages.view',
+            'contact-messages.delete',
+            'contact-messages.notes',
 
-            'view fee receipts',
-
-            // Website content
-            'view announcements',
-            'create announcements',
-            'edit announcements',
-            'delete announcements',
-
-            'view events',
-            'create events',
-            'edit events',
-            'delete events',
-
-            'view alumni',
-            'create alumni',
-            'edit alumni',
-            'delete alumni',
-
-            'view galleries',
-            'create galleries',
-            'edit galleries',
-            'delete galleries',
-
-            // Users and settings
-            'view users',
-            'create users',
-            'edit users',
-            'delete users',
-            'assign roles',
-
-            'view website settings',
-            'edit website settings',
+            // Website Settings
+            'website-settings.view',
+            'website-settings.edit',
         ];
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create permissions
+        |--------------------------------------------------------------------------
+        */
+
         foreach ($permissions as $permission) {
+
             Permission::firstOrCreate([
                 'name' => $permission,
                 'guard_name' => 'web',
             ]);
         }
 
+
         /*
         |--------------------------------------------------------------------------
-        | Roles
+        | Create roles
         |--------------------------------------------------------------------------
         */
 
-        $roles = [
-            'super-admin',
-            'admin',
-            'admission-officer',
-            'accountant',
-            'teacher',
-            'content-manager',
-            'student',
-            'parent',
+        $superAdmin = Role::firstOrCreate([
+            'name' => 'Super Admin',
+            'guard_name' => 'web',
+        ]);
+
+        $administrator = Role::firstOrCreate([
+            'name' => 'Administrator',
+            'guard_name' => 'web',
+        ]);
+
+        $admissionOfficer = Role::firstOrCreate([
+            'name' => 'Admission Officer',
+            'guard_name' => 'web',
+        ]);
+
+        $financeOfficer = Role::firstOrCreate([
+            'name' => 'Finance Officer',
+            'guard_name' => 'web',
+        ]);
+
+        $websiteManager = Role::firstOrCreate([
+            'name' => 'Website Manager',
+            'guard_name' => 'web',
+        ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Super Admin
+        |--------------------------------------------------------------------------
+        | Super Admin receives every permission.
+        |--------------------------------------------------------------------------
+        */
+
+        $superAdmin->syncPermissions(
+            Permission::where('guard_name', 'web')->get()
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Administrator
+        |--------------------------------------------------------------------------
+        */
+
+        $administratorPermissions = [
+            'dashboard.view',
+
+            'admission-sessions.view',
+            'admission-sessions.create',
+            'admission-sessions.edit',
+            'admission-sessions.open',
+            'admission-sessions.close',
+
+            'admissions.view',
+            'admissions.approve',
+            'admissions.reject',
+            'admissions.student-card',
+
+            'vouchers.view',
+            'vouchers.create',
+            'vouchers.print',
+
+            'payments.view',
+            'payments.update',
+            'payments.approve',
+            'payments.reject',
+
+            'course-categories.view',
+            'course-categories.create',
+            'course-categories.edit',
+
+            'courses.view',
+            'courses.create',
+            'courses.edit',
+
+            'bank-accounts.view',
+
+            'gallery.view',
+            'gallery.create',
+            'gallery.edit',
+
+            'announcements.view',
+            'announcements.create',
+            'announcements.edit',
+
+            'events.view',
+            'events.create',
+            'events.edit',
+
+            'alumni.view',
+            'alumni.create',
+            'alumni.edit',
+            'alumni.approve',
+            'alumni.reject',
+
+            'contact-messages.view',
+            'contact-messages.notes',
+
+            'website-settings.view',
+            'website-settings.edit',
         ];
 
-        foreach ($roles as $role) {
-            Role::firstOrCreate([
-                'name' => $role,
-                'guard_name' => 'web',
-            ]);
-        }
+        $administrator->syncPermissions(
+            Permission::whereIn('name', $administratorPermissions)
+                ->where('guard_name', 'web')
+                ->get()
+        );
+
 
         /*
         |--------------------------------------------------------------------------
-        | Role permissions
+        | Admission Officer
         |--------------------------------------------------------------------------
         */
 
-        $allPermissions = Permission::where('guard_name', 'web')->get();
+        $admissionOfficerPermissions = [
+            'dashboard.view',
 
-        // Full access
-        Role::findByName('super-admin', 'web')
-            ->syncPermissions($allPermissions);
+            'admission-sessions.view',
 
-        Role::findByName('admin', 'web')
-            ->syncPermissions($allPermissions);
+            'admissions.view',
+            'admissions.approve',
+            'admissions.reject',
+            'admissions.student-card',
 
-        // Admission officer
-        Role::findByName('admission-officer', 'web')
-            ->syncPermissions([
-                'view dashboard',
+            'vouchers.view',
+            'vouchers.create',
+            'vouchers.print',
 
-                'view admissions',
-                'create admissions',
-                'edit admissions',
-                'verify admission fees',
-                'approve admissions',
-                'reject admissions',
+            'payments.view',
+        ];
 
-                'view admission sessions',
+        $admissionOfficer->syncPermissions(
+            Permission::whereIn('name', $admissionOfficerPermissions)
+                ->where('guard_name', 'web')
+                ->get()
+        );
 
-                'view courses',
-                'view course categories',
-                'view course batches',
 
-                'view vouchers',
-                'create vouchers',
-                'view fee receipts',
-            ]);
+        /*
+        |--------------------------------------------------------------------------
+        | Finance Officer
+        |--------------------------------------------------------------------------
+        */
 
-        // Accountant
-        Role::findByName('accountant', 'web')
-            ->syncPermissions([
-                'view dashboard',
+        $financeOfficerPermissions = [
+            'dashboard.view',
 
-                'view admissions',
-                'view admission sessions',
+            'vouchers.view',
+            'vouchers.create',
+            'vouchers.print',
 
-                'view fee types',
-                'view bank accounts',
-                'view fee configurations',
+            'payments.view',
+            'payments.update',
+            'payments.approve',
+            'payments.reject',
 
-                'view vouchers',
-                'create vouchers',
-                'edit vouchers',
-                'verify payments',
-                'reject payments',
+            'bank-accounts.view',
+        ];
 
-                'view fee receipts',
-            ]);
+        $financeOfficer->syncPermissions(
+            Permission::whereIn('name', $financeOfficerPermissions)
+                ->where('guard_name', 'web')
+                ->get()
+        );
 
-        // Teacher
-        Role::findByName('teacher', 'web')
-            ->syncPermissions([
-                'view dashboard',
-                'view courses',
-                'view course categories',
-                'view course batches',
-                'view admissions',
-            ]);
 
-        // Content manager
-        Role::findByName('content-manager', 'web')
-            ->syncPermissions([
-                'view dashboard',
+        /*
+        |--------------------------------------------------------------------------
+        | Website Manager
+        |--------------------------------------------------------------------------
+        */
 
-                'view announcements',
-                'create announcements',
-                'edit announcements',
-                'delete announcements',
+        $websiteManagerPermissions = [
+            'dashboard.view',
 
-                'view events',
-                'create events',
-                'edit events',
-                'delete events',
+            'gallery.view',
+            'gallery.create',
+            'gallery.edit',
+            'gallery.delete',
 
-                'view alumni',
-                'create alumni',
-                'edit alumni',
-                'delete alumni',
+            'announcements.view',
+            'announcements.create',
+            'announcements.edit',
+            'announcements.delete',
 
-                'view galleries',
-                'create galleries',
-                'edit galleries',
-                'delete galleries',
+            'events.view',
+            'events.create',
+            'events.edit',
+            'events.delete',
 
-                'view website settings',
-                'edit website settings',
+            'alumni.view',
+            'alumni.create',
+            'alumni.edit',
+            'alumni.approve',
+            'alumni.reject',
 
-                'view courses',
-                'edit courses',
-            ]);
+            'contact-messages.view',
+            'contact-messages.delete',
+            'contact-messages.notes',
 
-        // Student
-        Role::findByName('student', 'web')
-            ->syncPermissions([
-                'view dashboard',
-                'view courses',
-                'view course categories',
-                'view course batches',
-            ]);
+            'website-settings.view',
+            'website-settings.edit',
+        ];
 
-        // Parent
-        Role::findByName('parent', 'web')
-            ->syncPermissions([
-                'view dashboard',
-                'view courses',
-                'view course categories',
-                'view course batches',
-            ]);
+        $websiteManager->syncPermissions(
+            Permission::whereIn('name', $websiteManagerPermissions)
+                ->where('guard_name', 'web')
+                ->get()
+        );
 
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $this->command->info('GATTC roles and permissions created successfully.');
+        $this->command->info(
+            'GATTC roles and permissions created successfully.'
+        );
     }
 }

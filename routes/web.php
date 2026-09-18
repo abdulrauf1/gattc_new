@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PublicAdmissionController;
+use App\Http\Controllers\PublicContactController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +30,9 @@ use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\FeePaymentController;
 use App\Http\Controllers\Admin\GalleryController;
 use App\Http\Controllers\Admin\VoucherController;
+use App\Http\Controllers\Admin\WebsiteSettingController;
+use App\Http\Controllers\Admin\ContactMessageController;
+use App\Http\Controllers\Admin\UserController;
 
 
 /*
@@ -258,7 +262,7 @@ Route::get('/dashboard', function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth'])
+Route::middleware(['auth', 'active.user'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
@@ -275,6 +279,51 @@ Route::middleware(['auth'])
             'index',
         ])->name('dashboard');
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | User Management
+        |--------------------------------------------------------------------------
+        */
+        Route::get('/users', [UserController::class, 'index'])
+            ->middleware('permission:users.view')
+            ->name('users.index');
+
+        Route::get('/users/create', [UserController::class, 'create'])
+            ->middleware('permission:users.create')
+            ->name('users.create');
+
+        Route::post('/users', [UserController::class, 'store'])
+            ->middleware('permission:users.create')
+            ->name('users.store');
+
+        Route::get('/users/{user}', [UserController::class, 'show'])
+            ->middleware('permission:users.view')
+            ->name('users.show');
+
+        Route::get('/users/{user}/edit', [UserController::class, 'edit'])
+            ->middleware('permission:users.edit')
+            ->name('users.edit');
+
+        Route::put('/users/{user}', [UserController::class, 'update'])
+            ->middleware('permission:users.edit')
+            ->name('users.update');
+
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])
+            ->middleware('permission:users.delete')
+            ->name('users.destroy');
+
+        Route::patch('/users/{user}/activate', [UserController::class, 'activate'])
+            ->middleware('permission:users.activate')
+            ->name('users.activate');
+
+        Route::patch('/users/{user}/deactivate', [UserController::class, 'deactivate'])
+            ->middleware('permission:users.activate')
+            ->name('users.deactivate');
+
+        Route::patch('/users/{user}/password', [UserController::class, 'updatePassword'])
+            ->middleware('permission:users.password')
+            ->name('users.password');
 
         /*
         |--------------------------------------------------------------------------
@@ -788,7 +837,7 @@ Route::middleware(['auth'])
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'active.user'])->group(function () {
 
 
     Route::get('/profile', [

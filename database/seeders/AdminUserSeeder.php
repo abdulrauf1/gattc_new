@@ -13,23 +13,29 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        $user = User::firstOrCreate(
+       $user = User::firstOrCreate(
             [
-                'email' => 'admin@example.com',
+                'email' => 'admin@gattc.edu.pk',
             ],
             [
-                'name' => 'GATTC Administrator',
+                'name' => 'GATTC Super Admin',
+                'email' => 'admin@gattc.edu.pk',
                 'password' => Hash::make('Admin@12345'),
+                'is_active' => true,
             ]
         );
 
-        // Assign the super-admin role if Spatie Permission is installed.
-        if (method_exists($user, 'assignRole')) {
-            $user->assignRole('super-admin');
-        }
+        $user->syncRoles([
+            'Super Admin',
+        ]);
+        
+        // // Assign the super-admin role if Spatie Permission is installed.
+        // if (method_exists($user, 'assignRole')) {
+        //     $user->assignRole('super-admin');
+        // }
 
         $this->command->info('Default GATTC administrator is ready.');
-        $this->command->info('Email: admin@example.com');
+        $this->command->info('Email: admin@gattc.edu.pk');
         $this->command->info('Password: Admin@12345');
     }
 }

@@ -81,50 +81,84 @@
             </div>
         </div>
 
-        {{-- Filter --}}
-        <div class="border-b border-slate-200 p-3">
+        {{-- Filter --}}        
+        <div class="p-3 border-b border-gray-200">
 
-            <form method="GET"
-                  action="{{ route('admin.contact-messages.index') }}">
+            <form method="GET" action="{{ route('admin.contact-messages.index') }}">
 
-                <div class="flex flex-col gap-2 xl:flex-row">
+                <div class="flex flex-col lg:flex-row gap-2">
 
-                    <div class="relative min-w-0 flex-1">
+                    {{-- Search --}}
+                    <div class="flex-1">
+                        <div class="relative">
 
-                        <i data-lucide="search"
-                           class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
+                            <i data-lucide="search"
+                               class="absolute left-3 top-1/2
+                                      -translate-y-1/2
+                                      w-4 h-4 text-gray-400">
+                            </i>
 
-                        <input type="text"
-                               name="search"
-                               value="{{ request('search') }}"
-                               placeholder="Search name, email, subject or message..."
-                               class="h-11 w-full rounded-lg border border-slate-300 pl-11 pr-4 text-sm outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100">
+                            <input
+                                type="text"
+                                name="search"
+                                value="{{ request('search') }}"
+                                placeholder="Search name, email, subject or message..."
+                                class="w-full h-9 rounded-lg border border-gray-300
+                                       pl-9 pr-3 text-sm
+                                       focus:border-blue-500
+                                       focus:ring-1 focus:ring-blue-500">
+                        </div>
                     </div>
 
-                    <select name="read"
-                            class="h-11 rounded-lg border border-slate-300 bg-white px-4 text-sm xl:w-44">
-                        <option value="">All Messages</option>
-                        <option value="unread" @selected(request('read') === 'unread')>
-                            Unread
-                        </option>
-                        <option value="read" @selected(request('read') === 'read')>
-                            Read
-                        </option>
-                    </select>
 
-                    <button type="submit"
-                            class="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-500 px-5 text-sm font-medium text-white hover:bg-emerald-600">
+                    {{-- Status --}}
+                    <div class="w-full lg:w-36">
 
-                        <i data-lucide="filter" class="h-4 w-4"></i>
+                        <select
+                            name="status"
+                            class="w-full h-9 rounded-lg border border-gray-300
+                                   px-3 text-sm">
+
+                            <option value="">All Messages</option>
+                            <option value="unread" @selected(request('read') === 'unread')>
+                                Unread
+                            </option>
+                            <option value="read" @selected(request('read') === 'read')>
+                                Read
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+
+                    {{-- Filter --}}
+                    <button
+                        type="submit"
+                        class="h-9 px-3 rounded-lg
+                               bg-emerald-500 hover:bg-emerald-600
+                               text-white text-sm font-medium
+                               inline-flex items-center justify-center gap-1.5">
+
+                        <i data-lucide="filter"
+                           class="w-4 h-4"></i>
+
                         Filter
 
                     </button>
 
-                    <a href="{{ route('admin.contact-messages.index') }}"
-                       class="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200"
-                       title="Reset">
 
-                        <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
+                    {{-- Reset --}}
+                    <a
+                        href="{{ route('admin.contact-messages.index') }}"
+                        title="Reset filters"
+                        class="h-9 w-9 rounded-lg
+                               bg-gray-100 hover:bg-gray-200
+                               flex items-center justify-center">
+
+                        <i data-lucide="rotate-ccw"
+                           class="w-4 h-4 text-gray-600"></i>
 
                     </a>
 
