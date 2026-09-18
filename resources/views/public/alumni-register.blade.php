@@ -1,52 +1,48 @@
 @extends('layouts.public')
 
-@section('title', 'Alumni Registration | GATTC')
+@section('title', 'Alumni Registration')
 
 @section('content')
 
-<section class="page-hero px-4 py-28 text-white sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-7xl">
-        <p class="font-bold uppercase tracking-[0.3em] text-emerald-300">
-            Stay Connected
-        </p>
+<section class="bg-slate-950 py-20 text-white">
 
-        <h1 class="mt-5 text-5xl font-black sm:text-6xl">
+    <div class="container-site">
+
+        <span class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">
+            Stay connected
+        </span>
+
+        <h1 class="mt-3 text-4xl font-black sm:text-5xl">
             Alumni Registration
         </h1>
 
-        <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-200">
-            Register yourself as a GATTC graduate and become part of our
-            growing alumni community.
+        <p class="mt-5 max-w-3xl text-slate-300">
+            Register your profile with GATTC and stay connected with the institute.
         </p>
+
     </div>
+
 </section>
 
-<section class="px-4 py-20 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-4xl">
 
-        <div class="mb-10 text-center">
-            <h2 class="text-4xl font-black brand-blue">
-                Graduate Registration Form
-            </h2>
+<section class="section-padding">
 
-            <p class="mt-4 text-slate-600">
-                Your profile will be reviewed by the administration before publication.
-            </p>
-        </div>
+    <div class="container-site max-w-4xl">
 
         <form
-            action="{{ route('public.alumni.store') }}"
             method="POST"
+            action="{{ route('public.alumni.register.store') }}"
             enctype="multipart/form-data"
-            class="soft-card p-7 sm:p-10"
+            class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
         >
+
             @csrf
 
-            <div class="grid gap-6 sm:grid-cols-2">
+            <div class="grid gap-5 p-6 md:grid-cols-2 md:p-8">
 
                 <div>
-                    <label class="mb-2 block font-bold text-slate-700">
-                        Full Name *
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                        Full Name
                     </label>
 
                     <input
@@ -54,14 +50,14 @@
                         name="name"
                         value="{{ old('name') }}"
                         required
-                        class="w-full rounded-xl border-slate-300 px-4 py-3 focus:border-emerald-500 focus:ring-emerald-500"
-                        placeholder="Your full name"
+                        class="w-full rounded-xl border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500"
                     >
                 </div>
 
+
                 <div>
-                    <label class="mb-2 block font-bold text-slate-700">
-                        Email Address *
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                        Email
                     </label>
 
                     <input
@@ -69,14 +65,14 @@
                         name="email"
                         value="{{ old('email') }}"
                         required
-                        class="w-full rounded-xl border-slate-300 px-4 py-3 focus:border-emerald-500 focus:ring-emerald-500"
-                        placeholder="you@example.com"
+                        class="w-full rounded-xl border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500"
                     >
                 </div>
 
+
                 <div>
-                    <label class="mb-2 block font-bold text-slate-700">
-                        Phone Number *
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                        Phone
                     </label>
 
                     <input
@@ -84,14 +80,14 @@
                         name="phone"
                         value="{{ old('phone') }}"
                         required
-                        class="w-full rounded-xl border-slate-300 px-4 py-3 focus:border-emerald-500 focus:ring-emerald-500"
-                        placeholder="03XX-XXXXXXX"
+                        class="w-full rounded-xl border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500"
                     >
                 </div>
 
+
                 <div>
-                    <label class="mb-2 block font-bold text-slate-700">
-                        Course / Trade *
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                        Course / Trade
                     </label>
 
                     <input
@@ -99,14 +95,15 @@
                         name="course"
                         value="{{ old('course') }}"
                         required
-                        class="w-full rounded-xl border-slate-300 px-4 py-3 focus:border-emerald-500 focus:ring-emerald-500"
                         placeholder="e.g. Computer Operator"
+                        class="w-full rounded-xl border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500"
                     >
                 </div>
 
+
                 <div>
-                    <label class="mb-2 block font-bold text-slate-700">
-                        Graduation Year *
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                        Graduation Year
                     </label>
 
                     <input
@@ -114,43 +111,43 @@
                         name="graduation_year"
                         value="{{ old('graduation_year') }}"
                         min="1950"
-                        max="{{ now()->year }}"
+                        max="{{ now()->year + 2 }}"
                         required
-                        class="w-full rounded-xl border-slate-300 px-4 py-3 focus:border-emerald-500 focus:ring-emerald-500"
-                        placeholder="{{ now()->year }}"
+                        class="w-full rounded-xl border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500"
                     >
                 </div>
 
+
                 <div>
-                    <label class="mb-2 block font-bold text-slate-700">
-                        Current Organization
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                        Organization
                     </label>
 
                     <input
                         type="text"
                         name="organization"
                         value="{{ old('organization') }}"
-                        class="w-full rounded-xl border-slate-300 px-4 py-3 focus:border-emerald-500 focus:ring-emerald-500"
-                        placeholder="Company / organization"
+                        class="w-full rounded-xl border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500"
                     >
                 </div>
 
+
                 <div>
-                    <label class="mb-2 block font-bold text-slate-700">
-                        Current Designation
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                        Designation
                     </label>
 
                     <input
                         type="text"
                         name="designation"
                         value="{{ old('designation') }}"
-                        class="w-full rounded-xl border-slate-300 px-4 py-3 focus:border-emerald-500 focus:ring-emerald-500"
-                        placeholder="Your job title"
+                        class="w-full rounded-xl border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500"
                     >
                 </div>
 
+
                 <div>
-                    <label class="mb-2 block font-bold text-slate-700">
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">
                         Profile Photo
                     </label>
 
@@ -158,50 +155,44 @@
                         type="file"
                         name="photo"
                         accept=".jpg,.jpeg,.png,.webp"
-                        class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3"
+                        class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
                     >
-
-                    <p class="mt-2 text-xs text-slate-500">
-                        Maximum size: 2 MB.
-                    </p>
                 </div>
 
-                <div class="sm:col-span-2">
-                    <label class="mb-2 block font-bold text-slate-700">
-                        Short Biography
+
+                <div class="md:col-span-2">
+
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                        Short Bio
                     </label>
 
                     <textarea
                         name="bio"
                         rows="5"
-                        class="w-full rounded-xl border-slate-300 px-4 py-3 focus:border-emerald-500 focus:ring-emerald-500"
-                        placeholder="Tell us briefly about your professional journey..."
+                        class="w-full rounded-xl border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500"
                     >{{ old('bio') }}</textarea>
+
                 </div>
+
             </div>
 
-            <div class="mt-8 rounded-xl border border-blue-100 bg-blue-50 p-5 text-sm leading-6 text-blue-900">
-                Your registration will remain pending until it is reviewed
-                and approved by the GATTC administration.
-            </div>
 
-            <div class="mt-8 flex flex-wrap gap-4">
+            <div class="border-t border-slate-200 bg-slate-50 px-6 py-5 md:px-8">
+
                 <button
                     type="submit"
-                    class="rounded-full bg-emerald-600 px-8 py-4 font-black text-white hover:bg-emerald-700"
+                    class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-700"
                 >
-                    Submit Registration →
+                    <i data-lucide="send" class="h-4 w-4"></i>
+                    Submit Registration
                 </button>
 
-                <a
-                    href="{{ route('public.alumni') }}"
-                    class="rounded-full border-2 border-slate-300 px-8 py-4 font-bold text-slate-700 hover:bg-slate-50"
-                >
-                    View Alumni
-                </a>
             </div>
+
         </form>
+
     </div>
+
 </section>
 
 @endsection

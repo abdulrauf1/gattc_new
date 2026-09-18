@@ -1,108 +1,107 @@
 @extends('layouts.public')
 
-@section('title', 'Gallery | GATTC')
+@section('title', 'Gallery')
 
 @section('content')
 
-<section class="page-hero px-4 py-28 text-white sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-7xl">
-        <p class="font-bold uppercase tracking-[0.3em] text-emerald-300">
-            Campus Memories
-        </p>
+<section class="bg-slate-950 py-20 text-white">
 
-        <h1 class="mt-5 text-5xl font-black sm:text-6xl">
-            Our Gallery
+    <div class="container-site">
+
+        <span class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">
+            Campus life
+        </span>
+
+        <h1 class="mt-3 text-4xl font-black sm:text-5xl">
+            GATTC Gallery
         </h1>
 
-        <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-200">
-            Explore campus activities, practical training, workshops and events.
+        <p class="mt-5 max-w-3xl text-slate-300">
+            Highlights from training, campus activities and student life.
         </p>
+
     </div>
+
 </section>
 
-<section
-    x-data="{ selected: null }"
-    class="px-4 py-20 sm:px-6 lg:px-8"
->
-    <div class="mx-auto max-w-7xl">
 
-        <div class="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4">
+<section class="section-padding">
 
-            @forelse($images as $image)
-                @php
-                    $imagePath = $image->image_path
-                        ?? $image->image
-                        ?? $image->path
-                        ?? null;
-                @endphp
+    <div class="container-site space-y-12">
 
-                @if($imagePath)
-                    <button
-                        @click="selected = '{{ asset('storage/' . ltrim($imagePath, '/')) }}'"
-                        class="group relative overflow-hidden rounded-3xl bg-white shadow-md"
-                    >
-                        <img
-                            src="{{ asset('storage/' . ltrim($imagePath, '/')) }}"
-                            alt="GATTC Gallery"
-                            class="h-64 w-full object-cover transition duration-500 group-hover:scale-110"
-                        >
+        @forelse($galleries as $gallery)
 
-                        <div class="absolute inset-0 flex items-center justify-center bg-[#073b70]/0 transition group-hover:bg-[#073b70]/60">
-                            <span class="scale-0 text-5xl text-white transition group-hover:scale-100">
-                                +
-                            </span>
-                        </div>
-                    </button>
+            <section>
+
+                <div class="mb-6">
+
+                    <h2 class="text-2xl font-black text-slate-900">
+                        {{ $gallery->title }}
+                    </h2>
+
+                    @if($gallery->description)
+
+                        <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                            {{ $gallery->description }}
+                        </p>
+
+                    @endif
+
+                </div>
+
+
+                @if($gallery->images->count())
+
+                    <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+
+                        @foreach($gallery->images as $image)
+
+                            <figure class="group overflow-hidden rounded-2xl bg-slate-100">
+
+                                <div class="aspect-[4/3] overflow-hidden">
+
+                                    <img
+                                        src="{{ asset('storage/' . $image->image) }}"
+                                        alt="{{ $image->caption ?? $gallery->title }}"
+                                        class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                                    >
+
+                                </div>
+
+                                @if($image->caption)
+
+                                    <figcaption class="bg-white p-3 text-xs text-slate-600">
+                                        {{ $image->caption }}
+                                    </figcaption>
+
+                                @endif
+
+                            </figure>
+
+                        @endforeach
+
+                    </div>
+
+                @else
+
+                    <div class="rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500">
+                        No images have been added to this gallery yet.
+                    </div>
+
                 @endif
-            @empty
-                @foreach([
-                    'gallery-1.jpg',
-                    'gallery-2.jpg',
-                    'gallery-3.jpg',
-                    'gallery-4.jpg',
-                    'gallery-5.jpg',
-                    'gallery-6.jpg'
-                ] as $image)
-                    <button
-                        @click="selected = '{{ asset('images/' . $image) }}'"
-                        class="group relative overflow-hidden rounded-3xl bg-white shadow-md"
-                    >
-                        <img
-                            src="{{ asset('images/' . $image) }}"
-                            alt="GATTC Campus"
-                            class="h-64 w-full object-cover transition duration-500 group-hover:scale-110"
-                        >
-                    </button>
-                @endforeach
-            @endforelse
 
-        </div>
+            </section>
 
-        <div class="mt-12">
-            {{ method_exists($images, 'links') ? $images->links() : '' }}
-        </div>
+        @empty
+
+            <div class="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500">
+                No public gallery items are available.
+            </div>
+
+        @endforelse
+
     </div>
 
-    <div
-        x-show="selected"
-        x-cloak
-        x-transition
-        @keydown.escape.window="selected = null"
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-5"
-    >
-        <button
-            @click="selected = null"
-            class="absolute right-6 top-5 text-5xl text-white"
-        >
-            ×
-        </button>
-
-        <img
-            :src="selected"
-            alt="Gallery preview"
-            class="max-h-[85vh] max-w-full rounded-2xl object-contain"
-        >
-    </div>
 </section>
 
 @endsection

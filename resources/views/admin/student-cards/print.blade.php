@@ -146,7 +146,7 @@
 
         .front-header {
             height: 13mm;
-            background: linear-gradient(120deg, #0b3d2e 0%, #145c46 55%, #0b3d2e 100%);
+            background: linear-gradient(120deg, #000000 0%, #062fe6bb 55%, #000000 100%);
             padding: 1.8mm 2.5mm;
             display: flex;
             align-items: center;
@@ -191,10 +191,10 @@
 
         .id-title {
             position: absolute;
-            right: 2.5mm;
-            top: 2.2mm;
+            right: 38mm;
+            top: 15mm;
             background: rgba(212,175,55,0.95);
-            color: #0b3d2e;
+            color: #000000;
             font-size: 5.1px;
             font-weight: 800;
             padding: 1mm 1.8mm;
@@ -288,7 +288,7 @@
         .card-number strong {
             display: block;
             font-size: 6.3px;
-            color: #0b3d2e;
+            color: #000000;
             letter-spacing: 0.4px;
         }
 
@@ -303,7 +303,7 @@
         .issuing strong {
             display: block;
             font-size: 5.6px;
-            color: #0b3d2e;
+            color: #000000;
         }
 
         /* ============================================================
@@ -312,7 +312,7 @@
 
         .back-header {
             height: 6.5mm;
-            background: linear-gradient(120deg, #0b3d2e 0%, #145c46 55%, #0b3d2e 100%);
+            background: linear-gradient(120deg, #000000 0%, #062fe6bb 55%, #000000 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -426,7 +426,7 @@
             left: 3mm;
             right: 3mm;
             bottom: 2.2mm;
-            background: #0b3d2e;
+            background: #000000;
             color: #f3f4f6;
             padding: 1.6mm 2.2mm;
             text-align: center;
@@ -550,9 +550,7 @@
 
     <div class="card">
 
-        <div class="id-title">
-            TRAINEE ID
-        </div>
+        
 
 
         <div class="front-header">
@@ -609,9 +607,11 @@
 
         </div>
 
-
+            <div class="id-title">
+                TRAINEE ID
+            </div>
         <div class="front-body">
-
+            
 
             {{-- Photo --}}
             <div class="photo-box">

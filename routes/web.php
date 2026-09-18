@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PublicAdmissionController;
 use App\Http\Controllers\PublicContactController;
-
+use App\Http\Controllers\PublicController;
+use App\Http\Controllers\PublicPaymentController;
 /*
 |--------------------------------------------------------------------------
 | Admin Controllers
@@ -44,118 +45,51 @@ use App\Http\Controllers\Admin\UserController;
 
 /*
 |--------------------------------------------------------------------------
-| Homepage
+| PUBLIC WEBSITE
 |--------------------------------------------------------------------------
 */
 
 Route::get('/', [
-    HomeController::class,
-    'index',
+    PublicController::class,
+    'home',
 ])->name('home');
 
 
-/*
-|--------------------------------------------------------------------------
-| Public Courses
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/courses', function () {
-
-    $courses = \App\Models\Course::query()
-        ->where('status', true)
-        ->with([
-            'category',
-            'bankAccount',
-        ])
-        ->orderBy('sort_order')
-        ->orderBy('title')
-        ->get();
-
-    return view('public.courses', [
-        'courses' => $courses,
-    ]);
-
-})->name('public.courses');
+Route::get('/courses', [
+    PublicController::class,
+    'courses',
+])->name('public.courses');
 
 
-Route::get('/courses/{course}', function (
-    \App\Models\Course $course
-) {
-
-    abort_unless(
-        $course->status,
-        404
-    );
-
-    $course->load([
-        'category',
-        'bankAccount',
-    ]);
-
-    return view('public.course-details', [
-        'course' => $course,
-    ]);
-
-})->name('public.course.show');
+Route::get('/courses/{slug}', [
+    PublicController::class,
+    'course',
+])->name('public.course.show');
 
 
-/*
-|--------------------------------------------------------------------------
-| Public Facilities
-|--------------------------------------------------------------------------
-*/
-
-Route::view(
-    '/facilities',
-    'public.facilities'
-)->name('public.facilities');
+Route::get('/facilities', [
+    PublicController::class,
+    'facilities',
+])->name('public.facilities');
 
 
-/*
-|--------------------------------------------------------------------------
-| Public Gallery
-|--------------------------------------------------------------------------
-*/
-
-Route::view(
-    '/gallery',
-    'public.gallery'
-)->name('public.gallery');
+Route::get('/gallery', [
+    PublicController::class,
+    'gallery',
+])->name('public.gallery');
 
 
-/*
-|--------------------------------------------------------------------------
-| Public Events
-|--------------------------------------------------------------------------
-*/
-
-Route::view(
-    '/events',
-    'public.events'
-)->name('public.events');
+Route::get('/events', [
+    PublicController::class,
+    'events',
+])->name('public.events');
 
 
-/*
-|--------------------------------------------------------------------------
-| Public Announcements
-|--------------------------------------------------------------------------
-*/
+Route::get('/announcements', [
+    PublicController::class,
+    'announcements',
+])->name('public.announcements');
 
-Route::view(
-    '/announcements',
-    'public.announcements'
-)->name('public.announcements');
-
-
-/*
-|--------------------------------------------------------------------------
-| Public News
-|--------------------------------------------------------------------------
-|
-| Keep /news for compatibility with old links.
-|
-*/
 
 Route::redirect(
     '/news',
@@ -163,44 +97,39 @@ Route::redirect(
 )->name('public.news');
 
 
-/*
-|--------------------------------------------------------------------------
-| Public Alumni
-|--------------------------------------------------------------------------
-*/
-
-Route::view(
-    '/alumni',
-    'public.alumni'
-)->name('public.alumni');
+Route::get('/alumni', [
+    PublicController::class,
+    'alumni',
+])->name('public.alumni');
 
 
-Route::view(
-    '/alumni/register',
-    'public.alumni-register'
-)->name('public.alumni.register');
+Route::get('/alumni/register', [
+    PublicController::class,
+    'alumniRegister',
+])->name('public.alumni.register');
 
 
-/*
-|--------------------------------------------------------------------------
-| Public Contact
-|--------------------------------------------------------------------------
-*/
+Route::post('/alumni/register', [
+    PublicController::class,
+    'storeAlumni',
+])->name('public.alumni.register.store');
+
 
 Route::get('/contact', [
-    PublicContactController::class,
-    'create',
+    PublicController::class,
+    'contact',
 ])->name('public.contact');
 
+
 Route::post('/contact', [
-    PublicContactController::class,
-    'store',
+    PublicController::class,
+    'storeContact',
 ])->name('public.contact.store');
 
 
 /*
 |--------------------------------------------------------------------------
-| PUBLIC ONLINE ADMISSION
+| ONLINE ADMISSION
 |--------------------------------------------------------------------------
 */
 
@@ -226,35 +155,12 @@ Route::get('/apply-online/voucher/{voucher}', [
 |--------------------------------------------------------------------------
 | PUBLIC PAYMENT SUBMISSION
 |--------------------------------------------------------------------------
-|
-| Student submits deposited payment details and paid-slip.
-|
 */
 
 Route::post('/payment-submit', [
-    FeePaymentController::class,
-    'submit',
+    PublicPaymentController::class,
+    'store',
 ])->name('public.payment.submit');
-
-
-/*
-|--------------------------------------------------------------------------
-| AUTHENTICATED DASHBOARD COMPATIBILITY
-|--------------------------------------------------------------------------
-|
-| Keep /dashboard so Laravel Breeze/default links continue to work.
-|
-*/
-
-Route::get('/dashboard', function () {
-
-    return redirect()->route(
-        'admin.dashboard'
-    );
-
-})->middleware(['auth'])
-  ->name('dashboard');
-
 
 /*
 |--------------------------------------------------------------------------

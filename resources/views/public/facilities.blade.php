@@ -1,56 +1,114 @@
 @extends('layouts.public')
 
-@section('title', 'Facilities | GATTC')
+@section('title', 'Facilities')
 
 @section('content')
 
-<section class="page-hero px-4 py-28 text-white sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-7xl">
-        <p class="font-bold uppercase tracking-[0.3em] text-emerald-300">
-            Learning Environment
-        </p>
+<section class="bg-slate-950 py-20 text-white">
 
-        <h1 class="mt-5 text-5xl font-black sm:text-6xl">
-            Our Facilities
+    <div class="container-site">
+
+        <span class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">
+            Campus facilities
+        </span>
+
+        <h1 class="mt-3 text-4xl font-black sm:text-5xl">
+            Facilities designed for practical learning
         </h1>
 
-        <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-200">
-            A supportive and practical environment where students learn,
-            experiment and develop professional confidence.
+        <p class="mt-5 max-w-3xl leading-7 text-slate-300">
+            A learning environment built around practical training, workshops, laboratories and student support.
         </p>
+
     </div>
+
 </section>
 
-<section class="px-4 py-20 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-7xl">
 
-        <div class="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
+<section class="section-padding">
 
-            @foreach([
-                ['icon' => '💻', 'title' => 'Computer Laboratories', 'text' => 'Modern computer-based learning for digital literacy, programming and office applications.'],
-                ['icon' => '🧰', 'title' => 'Technical Workshops', 'text' => 'Practical workshop activities that develop real technical and problem-solving skills.'],
-                ['icon' => '⚡', 'title' => 'Electrical Training Labs', 'text' => 'Hands-on learning in electrical installation, wiring, testing and safety.'],
-                ['icon' => '❄️', 'title' => 'HVACR Practice Areas', 'text' => 'Practical training in refrigeration, air conditioning and maintenance procedures.'],
-                ['icon' => '🛠️', 'title' => 'Equipment and Tools', 'text' => 'Training with tools and equipment used in professional technical environments.'],
-                ['icon' => '👨‍🏫', 'title' => 'Expert Instructors', 'text' => 'Guidance from experienced instructors focused on student progress and employability.']
-            ] as $facility)
-                <article class="soft-card p-8">
-                    <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-4xl">
-                        {{ $facility['icon'] }}
-                    </div>
+    <div class="container-site grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 
-                    <h2 class="mt-6 text-2xl font-black brand-blue">
-                        {{ $facility['title'] }}
-                    </h2>
+        @php
 
-                    <p class="mt-4 leading-7 text-slate-600">
-                        {{ $facility['text'] }}
-                    </p>
-                </article>
-            @endforeach
+            $facilities = [
+                [
+                    'icon' => 'wrench',
+                    'title' => 'Technical Workshops',
+                    'text' => 'Practical workshop spaces for hands-on technical training and skill development.',
+                ],
+                [
+                    'icon' => 'monitor',
+                    'title' => 'Computer Labs',
+                    'text' => 'Computer-based learning facilities for IT, office automation and digital skills.',
+                ],
+                [
+                    'icon' => 'sun',
+                    'title' => 'Electrical & Solar Training',
+                    'text' => 'Practical learning environments for electrical and renewable-energy skills.',
+                ],
+                [
+                    'icon' => 'building-2',
+                    'title' => 'Hostel',
+                    'text' => 'Residential support for eligible trainees where accommodation is available.',
+                ],
+                [
+                    'icon' => 'mosque',
+                    'title' => 'Mosque',
+                    'text' => 'On-campus prayer facility for trainees and staff.',
+                ],
+                [
+                    'icon' => 'presentation',
+                    'title' => 'Conference & Seminar Space',
+                    'text' => 'Dedicated space for seminars, orientations, meetings and awareness activities.',
+                ],
+                [
+                    'icon' => 'car',
+                    'title' => 'Parking',
+                    'text' => 'Dedicated parking arrangements for visitors, trainees and staff.',
+                ],
+                [
+                    'icon' => 'users',
+                    'title' => 'Student Areas',
+                    'text' => 'Student-focused spaces supporting interaction and campus activities.',
+                ],
+                [
+                    'icon' => 'briefcase-business',
+                    'title' => 'Career Support',
+                    'text' => 'Support for employability, workplace readiness and career development.',
+                ],
+            ];
 
-        </div>
+        @endphp
+
+
+        @foreach($facilities as $facility)
+
+            <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+
+                    <i
+                        data-lucide="{{ $facility['icon'] }}"
+                        class="h-6 w-6"
+                    ></i>
+
+                </div>
+
+                <h2 class="mt-5 text-lg font-bold text-slate-900">
+                    {{ $facility['title'] }}
+                </h2>
+
+                <p class="mt-2 text-sm leading-6 text-slate-600">
+                    {{ $facility['text'] }}
+                </p>
+
+            </article>
+
+        @endforeach
+
     </div>
+
 </section>
 
 @endsection

@@ -2,20 +2,22 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Voucher extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'voucher_no',
         'admission_session_id',
-        'course_id',
+        'fee_configuration_id',
         'admission_id',
+        'course_id',
+        'course_batch_id',
         'bank_account_id',
-        'voucher_type',
+        'voucher_category',
+
         'applicant_name',
         'father_name',
         'cnic',
@@ -24,17 +26,18 @@ class Voucher extends Model
         'phone',
         'email',
         'address',
+
         'amount',
         'issue_date',
         'due_date',
         'status',
         'remarks',
+
         'bank_name',
         'account_title',
         'account_number',
         'iban',
         'branch_name',
-        'branch_code',
     ];
 
     protected $casts = [
@@ -44,61 +47,36 @@ class Voucher extends Model
         'amount' => 'decimal:2',
     ];
 
-    public function session()
+    public function course(): BelongsTo
+    {
+        return $this->belongsTo(Course::class);
+    }
+
+    public function admissionSession(): BelongsTo
     {
         return $this->belongsTo(
-            AdmissionSession::class,
-            'admission_session_id'
+            AdmissionSession::class
         );
     }
 
-    public function course()
+    public function bankAccount(): BelongsTo
     {
         return $this->belongsTo(
-            Course::class
+            BankAccount::class
         );
     }
 
-    public function admission()
+    public function admission(): BelongsTo
     {
         return $this->belongsTo(
-            Admission::class,
-            'admission_id'
+            Admission::class
         );
     }
 
-    public function bankAccount()
-    {
-        return $this->belongsTo(
-            BankAccount::class,
-            'bank_account_id'
-        );
-    }
-
-    public function payment()
+    public function payment(): HasOne
     {
         return $this->hasOne(
-            FeePayment::class,
-            'voucher_id'
+            FeePayment::class
         );
-    }
-
-    public function getVoucherTypeLabelAttribute(): string
-    {
-        return match ($this->voucher_type) {
-            'admission' =>
-                'Admission',
-
-            'hostel' =>
-                'Hostel',
-
-            'readmission' =>
-                'Readmission',
-
-            default =>
-                ucfirst(
-                    $this->voucher_type
-                ),
-        };
     }
 }

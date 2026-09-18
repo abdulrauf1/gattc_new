@@ -1,172 +1,256 @@
 @extends('layouts.public')
 
-@section('title', 'Contact Us | GATTC')
+@section('title', 'Contact')
+
+@php
+    $address = $settings->get(
+        'address',
+        '16-A Industrial Estate, Opposite BRT TEVTA Stop, Hayatabad, Peshawar'
+    );
+
+    $phone = $settings->get(
+        'phone',
+        '091-5881389'
+    );
+
+    $email = $settings->get(
+        'email',
+        'info@gattc.edu.pk'
+    );
+
+    $facebook = $settings->get(
+        'facebook',
+        'GATTC Peshawar'
+    );
+@endphp
 
 @section('content')
 
-<section class="page-hero px-4 py-28 text-white sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-7xl">
-        <p class="font-bold uppercase tracking-[0.3em] text-emerald-300">
-            Get in Touch
-        </p>
+<section class="bg-slate-950 py-20 text-white">
 
-        <h1 class="mt-5 text-5xl font-black sm:text-6xl">
+    <div class="container-site">
+
+        <span class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">
+            Get in touch
+        </span>
+
+        <h1 class="mt-3 text-4xl font-black sm:text-5xl">
             Contact GATTC
         </h1>
 
-        <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-200">
-            Have a question about admissions, courses or training programs?
-            Send us a message.
+        <p class="mt-5 max-w-3xl text-slate-300">
+            Send us a message or use the institute contact details below.
         </p>
+
     </div>
+
 </section>
 
-<section class="px-4 py-20 sm:px-6 lg:px-8">
-    <div class="mx-auto grid max-w-7xl gap-10 lg:grid-cols-5">
 
-        <div class="lg:col-span-2">
-            <h2 class="section-heading text-4xl font-black brand-blue">
-                Visit Our Campus
-            </h2>
+<section class="section-padding">
 
-            <p class="mt-7 leading-8 text-slate-600">
-                Our team is available to guide you about technical training,
-                admission procedures and available courses.
-            </p>
+    <div class="container-site grid gap-8 lg:grid-cols-[.7fr_1.3fr]">
 
-            <div class="mt-8 space-y-5">
-                <div class="flex gap-4">
-                    <div class="text-2xl">📍</div>
-                    <div>
-                        <h3 class="font-black brand-blue">Address</h3>
-                        <p class="mt-1 text-slate-600">
-                            Hayatabad, Peshawar, Khyber Pakhtunkhwa
-                        </p>
-                    </div>
-                </div>
+        <div class="space-y-4">
+
+            <div class="rounded-2xl border border-slate-200 bg-white p-6">
 
                 <div class="flex gap-4">
-                    <div class="text-2xl">☎️</div>
-                    <div>
-                        <h3 class="font-black brand-blue">Phone</h3>
-                        <p class="mt-1 text-slate-600">091-5881389</p>
+
+                    <div class="rounded-xl bg-emerald-100 p-3 text-emerald-700">
+                        <i data-lucide="map-pin" class="h-5 w-5"></i>
                     </div>
+
+                    <div>
+
+                        <div class="font-semibold text-slate-900">
+                            Address
+                        </div>
+
+                        <div class="mt-1 text-sm leading-6 text-slate-600">
+                            {{ $address }}
+                        </div>
+
+                    </div>
+
                 </div>
 
-                <div class="flex gap-4">
-                    <div class="text-2xl">🌐</div>
-                    <div>
-                        <h3 class="font-black brand-blue">Website</h3>
-                        <p class="mt-1 text-slate-600">gattc.edu.pk</p>
-                    </div>
-                </div>
             </div>
+
+
+            <div class="rounded-2xl border border-slate-200 bg-white p-6">
+
+                <div class="flex gap-4">
+
+                    <div class="rounded-xl bg-emerald-100 p-3 text-emerald-700">
+                        <i data-lucide="phone" class="h-5 w-5"></i>
+                    </div>
+
+                    <div>
+
+                        <div class="font-semibold text-slate-900">
+                            Phone
+                        </div>
+
+                        <a
+                            href="tel:{{ $phone }}"
+                            class="mt-1 block text-sm text-slate-600"
+                        >
+                            {{ $phone }}
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="rounded-2xl border border-slate-200 bg-white p-6">
+
+                <div class="flex gap-4">
+
+                    <div class="rounded-xl bg-emerald-100 p-3 text-emerald-700">
+                        <i data-lucide="mail" class="h-5 w-5"></i>
+                    </div>
+
+                    <div>
+
+                        <div class="font-semibold text-slate-900">
+                            Email
+                        </div>
+
+                        <a
+                            href="mailto:{{ $email }}"
+                            class="mt-1 block text-sm text-slate-600"
+                        >
+                            {{ $email }}
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
         </div>
 
-        <div class="soft-card p-7 sm:p-10 lg:col-span-3">
-            <h2 class="text-3xl font-black brand-blue">
-                Send Us a Message
-            </h2>
 
-            <form method="POST"
+        <div>
+
+            <form
+                method="POST"
                 action="{{ route('public.contact.store') }}"
-                class="space-y-4">
+                class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8"
+            >
 
                 @csrf
 
-                @if(session('success'))
-                    <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-                        {{ session('success') }}
-                    </div>
-                @endif
+                <h2 class="text-2xl font-black text-slate-900">
+                    Send us a message
+                </h2>
 
-                @if($errors->any())
-                    <div class="rounded-lg border border-red-200 bg-red-50 p-4">
-                        <ul class="list-disc pl-5 text-xs text-red-700">
-                            @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="mt-6 grid gap-5 md:grid-cols-2">
 
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-slate-700">
-                            Name *
+
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">
+                            Name
                         </label>
 
-                        <input type="text"
+                        <input
+                            type="text"
                             name="name"
                             value="{{ old('name') }}"
                             required
-                            class="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm"
-                            placeholder="Your name">
+                            class="w-full rounded-xl border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                        >
+
                     </div>
 
+
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-slate-700">
-                            Email *
+
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">
+                            Email
                         </label>
 
-                        <input type="email"
+                        <input
+                            type="email"
                             name="email"
                             value="{{ old('email') }}"
                             required
-                            class="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm"
-                            placeholder="you@example.com">
+                            class="w-full rounded-xl border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                        >
+
                     </div>
 
+
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-slate-700">
+
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">
                             Phone
                         </label>
 
-                        <input type="text"
+                        <input
+                            type="text"
                             name="phone"
                             value="{{ old('phone') }}"
-                            class="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm"
-                            placeholder="03XX-XXXXXXX">
+                            class="w-full rounded-xl border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                        >
+
                     </div>
 
+
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-slate-700">
+
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">
                             Subject
                         </label>
 
-                        <input type="text"
+                        <input
+                            type="text"
                             name="subject"
                             value="{{ old('subject') }}"
-                            class="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm"
-                            placeholder="How can we help?">
+                            required
+                            class="w-full rounded-xl border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                        >
+
+                    </div>
+
+
+                    <div class="md:col-span-2">
+
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">
+                            Message
+                        </label>
+
+                        <textarea
+                            name="message"
+                            rows="7"
+                            required
+                            class="w-full rounded-xl border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                        >{{ old('message') }}</textarea>
+
                     </div>
 
                 </div>
 
-                <div>
-                    <label class="mb-1.5 block text-sm font-medium text-slate-700">
-                        Message *
-                    </label>
 
-                    <textarea name="message"
-                            rows="7"
-                            required
-                            class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm leading-6"
-                            placeholder="Write your message...">{{ old('message') }}</textarea>
-                </div>
-
-                <button type="submit"
-                        class="inline-flex h-11 items-center gap-2 rounded-lg bg-emerald-500 px-5 text-sm font-medium text-white hover:bg-emerald-600">
-
+                <button
+                    type="submit"
+                    class="mt-6 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white hover:bg-emerald-700"
+                >
                     <i data-lucide="send" class="h-4 w-4"></i>
                     Send Message
-
                 </button>
 
             </form>
+
         </div>
+
     </div>
+
 </section>
 
 @endsection

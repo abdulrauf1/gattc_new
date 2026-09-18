@@ -86,6 +86,24 @@ class WebsiteSettingController extends Controller
                 'string',
                 'max:1000',
             ],
+            'vision' => ['nullable', 'string', 'max:3000'],
+            'mission' => ['nullable', 'string', 'max:3000'],
+            'objectives' => ['nullable', 'string', 'max:5000'],
+
+            'principal_name' => ['nullable', 'string', 'max:255'],
+            'principal_designation' => ['nullable', 'string', 'max:255'],
+            'principal_photo' => ['nullable', 'string', 'max:500'],
+            'principal_message' => ['nullable', 'string', 'max:2000'],
+
+            'imc_chairman_name' => ['nullable', 'string', 'max:255'],
+            'imc_chairman_designation' => ['nullable', 'string', 'max:255'],
+            'imc_chairman_photo' => ['nullable', 'string', 'max:500'],
+            'imc_chairman_message' => ['nullable', 'string', 'max:2000'],
+
+            'md_name' => ['nullable', 'string', 'max:255'],
+            'md_designation' => ['nullable', 'string', 'max:255'],
+            'md_photo' => ['nullable', 'string', 'max:500'],
+            'md_message' => ['nullable', 'string', 'max:2000'],
         ]);
 
         foreach ($validated as $key => $value) {

@@ -2,136 +2,344 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Admission;
+use App\Models\AdmissionSession;
 use App\Models\Alumni;
 use App\Models\Announcement;
+use App\Models\ContactMessage;
 use App\Models\Course;
-use App\Models\CourseCategory;
 use App\Models\Event;
-use App\Models\AdmissionSession;
+use App\Models\Gallery;
+use App\Models\WebsiteSetting;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 
 class PublicController extends Controller
 {
+    /**
+     * Home page.
+     */
     public function home()
     {
+        $settings = $this->settings();
+
+        $activeSession = $this->activeAdmissionSession();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Courses
+        |--------------------------------------------------------------------------
+        |
+        | IMPORTANT:
+        | The current courses table does not have a "featured" column.
+        |
+        */
+
         $courses = Course::query()
             ->where('status', true)
-            ->latest()
+            ->with('category')
+            ->orderBy('sort_order')
+            ->orderBy('title')
             ->take(6)
             ->get();
 
-        $categories = CourseCategory::query()
-            ->where('status', true)
-            ->latest()
-            ->take(6)
-            ->get();
+        /*
+        |--------------------------------------------------------------------------
+        | Announcements
+        |--------------------------------------------------------------------------
+        */
 
         $announcements = Announcement::query()
             ->where('status', true)
-            ->latest()
+            ->where(function ($query) {
+                $query->whereNull('published_at')
+                    ->orWhere('published_at', '<=', now());
+            })
+            ->latest('published_at')
+            ->latest('id')
             ->take(3)
             ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Events
+        |--------------------------------------------------------------------------
+        */
 
         $events = Event::query()
             ->where('status', true)
-            ->latest()
+            ->orderBy('event_date')
+            ->orderBy('id')
             ->take(3)
             ->get();
 
-        return view('welcome', compact(
-            'courses',
-            'categories',
-            'announcements',
-            'events'
-        ));
+        /*
+        |--------------------------------------------------------------------------
+        | Gallery
+        |--------------------------------------------------------------------------
+        */
+
+        $galleryImages = collect();
+
+        $galleries = Gallery::query()
+            ->where('status', true)
+            ->with([
+                'images' => function ($query) {
+                    $query
+                        ->orderBy('sort_order')
+                        ->orderBy('id')
+                        ->take(8);
+                },
+            ])
+            ->latest('id')
+            ->take(4)
+            ->get();
+
+        foreach ($galleries as $gallery) {
+            foreach ($gallery->images as $image) {
+                $galleryImages->push($image);
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Public statistics
+        |--------------------------------------------------------------------------
+        */
+
+        $alumniCount = Alumni::query()
+            ->where('status', true)
+            ->count();
+
+        $studentCount = Admission::query()
+            ->where('status', 'approved')
+            ->count();
+
+        $courseCount = Course::query()
+            ->where('status', true)
+            ->count();
+
+        return view('public.home', [
+            'settings' => $settings,
+            'activeSession' => $activeSession,
+            'courses' => $courses,
+            'announcements' => $announcements,
+            'events' => $events,
+            'galleryImages' => $galleryImages->take(8),
+            'alumniCount' => $alumniCount,
+            'studentCount' => $studentCount,
+            'courseCount' => $courseCount,
+        ]);
     }
 
+    /**
+     * Public course listing.
+     */
     public function courses()
     {
         $courses = Course::query()
             ->where('status', true)
-            ->latest()
-            ->paginate(9);
-
-        $categories = CourseCategory::query()
-            ->where('status', true)
-            ->orderBy('name')
+            ->with('category')
+            ->orderBy('sort_order')
+            ->orderBy('title')
             ->get();
 
-        return view('public.courses.index', compact(
-            'courses',
-            'categories'
-        ));
+        return view('public.courses', [
+            'courses' => $courses,
+        ]);
     }
 
+    /**
+     * Single public course.
+     */
+    public function course(string $slug)
+    {
+        $course = Course::query()
+            ->where('slug', $slug)
+            ->where('status', true)
+            ->with('category')
+            ->firstOrFail();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Related courses
+        |--------------------------------------------------------------------------
+        */
+
+        $relatedCourses = Course::query()
+            ->where('status', true)
+            ->where('id', '!=', $course->id)
+            ->when(
+                $course->course_category_id,
+                function ($query) use ($course) {
+                    $query->where(
+                        'course_category_id',
+                        $course->course_category_id
+                    );
+                }
+            )
+            ->orderBy('sort_order')
+            ->orderBy('title')
+            ->take(3)
+            ->get();
+
+        return view('public.course-details', [
+            'course' => $course,
+            'relatedCourses' => $relatedCourses,
+        ]);
+    }
+
+    /**
+     * Facilities page.
+     */
     public function facilities()
     {
         return view('public.facilities');
     }
 
+    /**
+     * Gallery page.
+     */
     public function gallery()
     {
-        $images = collect();
+        $galleries = Gallery::query()
+            ->where('status', true)
+            ->with([
+                'images' => function ($query) {
+                    $query
+                        ->orderBy('sort_order')
+                        ->orderBy('id');
+                },
+            ])
+            ->latest('id')
+            ->get();
 
-        if (Schema::hasTable('gallery_images')) {
-            $images = DB::table('gallery_images')
-                ->latest()
-                ->paginate(12);
-        }
-
-        return view('public.gallery', compact('images'));
+        return view('public.gallery', [
+            'galleries' => $galleries,
+        ]);
     }
 
+    /**
+     * Events page.
+     */
     public function events()
     {
         $events = Event::query()
             ->where('status', true)
-            ->latest()
-            ->paginate(9);
+            ->orderBy('event_date')
+            ->orderBy('id')
+            ->get();
 
-        return view('public.events', compact('events'));
+        return view('public.events', [
+            'events' => $events,
+        ]);
     }
 
+    /**
+     * Announcements page.
+     */
     public function announcements()
     {
         $announcements = Announcement::query()
             ->where('status', true)
-            ->latest()
-            ->paginate(10);
+            ->where(function ($query) {
+                $query->whereNull('published_at')
+                    ->orWhere('published_at', '<=', now());
+            })
+            ->latest('published_at')
+            ->latest('id')
+            ->paginate(9);
 
-        return view('public.announcements', compact('announcements'));
+        return view('public.announcements', [
+            'announcements' => $announcements,
+        ]);
     }
 
+    /**
+     * Alumni page.
+     */
     public function alumni()
     {
         $alumni = Alumni::query()
             ->where('status', true)
-            ->latest()
-            ->paginate(9);
+            ->orderByDesc('graduation_year')
+            ->orderBy('name')
+            ->paginate(12);
 
-        return view('public.alumni', compact('alumni'));
+        return view('public.alumni', [
+            'alumni' => $alumni,
+        ]);
     }
 
+    /**
+     * Alumni registration page.
+     */
     public function alumniRegister()
     {
         return view('public.alumni-register');
     }
 
+    /**
+     * Store alumni registration.
+     */
     public function storeAlumni(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:150'],
-            'email' => ['required', 'email', 'max:150', 'unique:alumnis,email'],
-            'phone' => ['required', 'string', 'max:30'],
-            'course' => ['required', 'string', 'max:150'],
-            'graduation_year' => ['required', 'integer', 'min:1950', 'max:' . now()->year],
-            'organization' => ['nullable', 'string', 'max:150'],
-            'designation' => ['nullable', 'string', 'max:150'],
-            'bio' => ['nullable', 'string', 'max:2000'],
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                'unique:alumni,email',
+            ],
+
+            'phone' => [
+                'required',
+                'string',
+                'max:50',
+            ],
+
+            'course' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'graduation_year' => [
+                'required',
+                'integer',
+                'min:1950',
+                'max:' . (now()->year + 2),
+            ],
+
+            'organization' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'designation' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'bio' => [
+                'nullable',
+                'string',
+                'max:2000',
+            ],
+
+            'photo' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:2048',
+            ],
         ]);
 
         if ($request->hasFile('photo')) {
@@ -142,11 +350,8 @@ class PublicController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Pending registration
+        | New alumni registrations require admin approval.
         |--------------------------------------------------------------------------
-        |
-        | status = false means the admin must approve the profile first.
-        |
         */
 
         $validated['status'] = false;
@@ -157,52 +362,86 @@ class PublicController extends Controller
             ->route('public.alumni.register')
             ->with(
                 'success',
-                'Your alumni registration has been submitted for approval.'
+                'Your alumni registration has been submitted successfully and is awaiting administrative approval.'
             );
     }
 
+    /**
+     * Contact page.
+     */
     public function contact()
     {
-        return view('public.contact');
+        return view('public.contact', [
+            'settings' => $this->settings(),
+        ]);
     }
 
-    public function submitContact(Request $request)
+    /**
+     * Store contact message.
+     */
+    public function storeContact(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:150'],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'subject' => ['required', 'string', 'max:150'],
-            'message' => ['required', 'string', 'max:3000'],
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+            ],
+
+            'phone' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
+
+            'subject' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'message' => [
+                'required',
+                'string',
+                'max:5000',
+            ],
         ]);
 
-        if (Schema::hasTable('contact_messages')) {
-            DB::table('contact_messages')->insert([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'phone' => $validated['phone'] ?? null,
-                'subject' => $validated['subject'],
-                'message' => $validated['message'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
+        ContactMessage::create($validated);
 
-        return back()->with(
-            'success',
-            'Thank you. Your message has been submitted successfully.'
-        );
+        return redirect()
+            ->route('public.contact')
+            ->with(
+                'success',
+                'Thank you. Your message has been sent to GATTC administration.'
+            );
     }
 
-    public function admission()
+    /**
+     * Get website settings.
+     */
+    private function settings()
     {
-        $activeSession = AdmissionSession::query()
-            ->where('is_open', true)
-            ->whereDate('opening_date', '<=', now())
-            ->whereDate('closing_date', '>=', now())
-            ->latest()
-            ->first();
+        return WebsiteSetting::query()
+            ->pluck('value', 'key');
+    }
 
-        return view('public.admission', compact('activeSession'));
+    /**
+     * Get currently active admission session.
+     */
+    private function activeAdmissionSession(): ?AdmissionSession
+    {
+        return AdmissionSession::query()
+            ->where('is_open', true)
+            ->whereDate('opening_date', '<=', today())
+            ->whereDate('closing_date', '>=', today())
+            ->latest('id')
+            ->first();
     }
 }

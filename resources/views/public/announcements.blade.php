@@ -1,69 +1,73 @@
 @extends('layouts.public')
 
-@section('title', 'Announcements | GATTC')
+@section('title', 'Announcements')
 
 @section('content')
 
-<section class="page-hero px-4 py-28 text-white sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-7xl">
-        <p class="font-bold uppercase tracking-[0.3em] text-emerald-300">
-            Latest Information
-        </p>
+<section class="bg-slate-950 py-20 text-white">
 
-        <h1 class="mt-5 text-5xl font-black sm:text-6xl">
+    <div class="container-site">
+
+        <span class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">
+            Latest updates
+        </span>
+
+        <h1 class="mt-3 text-4xl font-black sm:text-5xl">
             Announcements
         </h1>
 
-        <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-200">
-            Read the latest admissions, academic and institutional announcements.
-        </p>
     </div>
+
 </section>
 
-<section class="px-4 py-20 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-5xl space-y-6">
 
-        @forelse($announcements as $announcement)
-            <article class="soft-card p-7 sm:p-9">
-                <div class="flex flex-col gap-5 sm:flex-row sm:items-start">
+<section class="section-padding">
 
-                    <div class="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-                        <span class="text-xl font-black">
-                            {{ optional($announcement->published_at)->format('d') ?? '—' }}
-                        </span>
+    <div class="container-site">
 
-                        <span class="text-xs font-bold uppercase">
-                            {{ optional($announcement->published_at)->format('M') ?? 'News' }}
-                        </span>
+        <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+
+            @forelse($announcements as $announcement)
+
+                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+
+                    <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                        {{ $announcement->published_at?->format('d M Y') ?? 'GATTC Update' }}
                     </div>
 
-                    <div>
-                        <p class="text-sm font-bold uppercase tracking-wide text-emerald-600">
-                            Official Announcement
-                        </p>
 
-                        <h2 class="mt-2 text-2xl font-black brand-blue">
-                            {{ $announcement->title }}
-                        </h2>
+                    <h2 class="mt-3 text-xl font-bold text-slate-900">
+                        {{ $announcement->title }}
+                    </h2>
 
-                        @if($announcement->content ?? false)
-                            <p class="mt-4 leading-8 text-slate-600">
-                                {{ $announcement->content }}
-                            </p>
-                        @endif
-                    </div>
+
+                    <p class="mt-3 text-sm leading-6 text-slate-600">
+                        {{ strip_tags($announcement->content) }}
+                    </p>
+
+                </article>
+
+            @empty
+
+                <div class="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500 md:col-span-2 lg:col-span-3">
+                    No announcements are currently available.
                 </div>
-            </article>
-        @empty
-            <div class="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-slate-500">
-                No announcements are available at the moment.
-            </div>
-        @endforelse
 
-        <div class="pt-5">
-            {{ $announcements->links() }}
+            @endforelse
+
         </div>
+
+
+        @if($announcements->hasPages())
+
+            <div class="mt-8">
+                {{ $announcements->links() }}
+            </div>
+
+        @endif
+
     </div>
+
 </section>
 
 @endsection

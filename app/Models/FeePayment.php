@@ -2,13 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FeePayment extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'voucher_id',
         'deposit_slip_no',
@@ -28,27 +27,17 @@ class FeePayment extends Model
         'amount' => 'decimal:2',
     ];
 
-    public function voucher()
+    public function voucher(): BelongsTo
     {
         return $this->belongsTo(
-            Voucher::class,
-            'voucher_id'
+            Voucher::class
         );
     }
 
-    public function histories()
+    public function histories(): HasMany
     {
         return $this->hasMany(
-            FeePaymentHistory::class,
-            'fee_payment_id'
-        );
-    }
-
-    public function receipt()
-    {
-        return $this->hasOne(
-            FeeReceipt::class,
-            'fee_payment_id'
+            FeePaymentHistory::class
         );
     }
 }
