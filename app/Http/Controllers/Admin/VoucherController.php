@@ -695,19 +695,97 @@ class VoucherController extends Controller
     */
 
     public function print(Voucher $voucher)
-    {
-        $voucher->load([
-            'session',
-            'course.category',
-            'bankAccount',
-            'admission',
-        ]);
+{
+    $voucher->load([
+        'course',
+        'bankAccount',
+        'admissionSession',
+    ]);
 
-        return view(
-            'admin.vouchers.print',
-            compact('voucher')
-        );
+
+    /*
+     * --------------------------------------------------------------
+     * Database-driven deposit details
+     * --------------------------------------------------------------
+     */
+    if ($voucher->voucher_type === 'hostel') {
+
+        $depositDetails = FeeDepositDetail::query()
+            ->whereNull('course_id')
+            ->where(
+                'fee_category',
+                'hostel'
+            )
+            ->where(
+                'status',
+                true
+            )
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+    } else {
+
+        $courseType =
+            $voucher->course?->course_type ??
+            'regular';
+
+
+        $depositDetails = FeeDepositDetail::query()
+            ->where(
+                'course_id',
+                $voucher->course_id
+            )
+            ->where(
+                'fee_category',
+                $courseType
+            )
+            ->where(
+                'status',
+                true
+            )
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+
+        /*
+         * Fallback to global category template.
+         */
+        if ($depositDetails->isEmpty()) {
+
+            $depositDetails =
+                FeeDepositDetail::query()
+                    ->whereNull('course_id')
+                    ->where(
+                        'fee_category',
+                        $courseType
+                    )
+                    ->where(
+                        'status',
+                        true
+                    )
+                    ->orderBy('sort_order')
+                    ->orderBy('id')
+                    ->get();
+        }
     }
+
+
+    return view(
+        'admin.vouchers.print',
+        [
+            'voucher' =>
+                $voucher,
+
+            'publicVoucher' =>
+                false,
+
+            'depositDetails' =>
+                $depositDetails,
+        ]
+    );
+}
 
 
     /*

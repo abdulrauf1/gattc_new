@@ -158,12 +158,13 @@
                     class="flex min-w-0 items-center gap-3"
                 >
 
-                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
-                        <span class="text-sm font-bold">
-                            G
-                        </span>
-                    </div>
+                    <img
+                        src="{{ asset('images/gattc-logo.png') }}"
+                        alt="GATTC Logo"
+                        class="h-11 w-11 object-contain"
+                    >
 
+                    
                     <div class="min-w-0">
 
                         <div class="truncate text-sm font-bold text-slate-900 md:text-base">
@@ -390,10 +391,14 @@
 
                 <div class="flex items-center gap-3">
 
-                    <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-600 text-white">
-                        G
-                    </div>
 
+                    <img
+                        src="{{ asset('images/gattc-logo.png') }}"
+                        alt="GATTC Logo"
+                        class="h-11 w-11 object-contain"
+                    >
+
+                    
                     <div>
                         <div class="font-semibold text-white">
                             {{ $shortName }}

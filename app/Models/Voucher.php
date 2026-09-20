@@ -47,36 +47,95 @@ class Voucher extends Model
         'amount' => 'decimal:2',
     ];
 
-    public function course(): BelongsTo
-    {
-        return $this->belongsTo(Course::class);
-    }
-
+    /**
+     * Admission session associated with the voucher.
+     */
     public function admissionSession(): BelongsTo
     {
         return $this->belongsTo(
-            AdmissionSession::class
+            AdmissionSession::class,
+            'admission_session_id'
         );
     }
 
-    public function bankAccount(): BelongsTo
+    /**
+     * Backward-compatible alias.
+     *
+     * Some older dashboard code uses $voucher->session.
+     */
+    public function session(): BelongsTo
     {
         return $this->belongsTo(
-            BankAccount::class
+            AdmissionSession::class,
+            'admission_session_id'
         );
     }
 
+    /**
+     * Fee configuration used for this voucher.
+     */
+    public function feeConfiguration(): BelongsTo
+    {
+        return $this->belongsTo(
+            FeeConfiguration::class,
+            'fee_configuration_id'
+        );
+    }
+
+    /**
+     * Admission linked to the voucher.
+     */
     public function admission(): BelongsTo
     {
         return $this->belongsTo(
-            Admission::class
+            Admission::class,
+            'admission_id'
         );
     }
 
+    /**
+     * Course associated with the voucher.
+     */
+    public function course(): BelongsTo
+    {
+        return $this->belongsTo(
+            Course::class,
+            'course_id'
+        );
+    }
+
+    /**
+     * Course batch associated with the voucher.
+     */
+    public function courseBatch(): BelongsTo
+    {
+        return $this->belongsTo(
+            CourseBatch::class,
+            'course_batch_id'
+        );
+    }
+
+    /**
+     * Bank account assigned to the voucher.
+     */
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(
+            BankAccount::class,
+            'bank_account_id'
+        );
+    }
+
+    /**
+     * Payment submitted against this voucher.
+     *
+     * Assumes fee_payments.voucher_id is the foreign key.
+     */
     public function payment(): HasOne
     {
         return $this->hasOne(
-            FeePayment::class
+            FeePayment::class,
+            'voucher_id'
         );
     }
 }

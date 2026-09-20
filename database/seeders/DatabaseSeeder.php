@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             BankAccountSeeder::class,
             DummyDataSeeder::class,
-            
+            FeeDepositDetailSeeder::class,
             AdminUserSeeder::class,
         ]);
 

@@ -34,6 +34,7 @@ use App\Http\Controllers\Admin\VoucherController;
 use App\Http\Controllers\Admin\WebsiteSettingController;
 use App\Http\Controllers\Admin\ContactMessageController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\FeeDepositDetailController;
 
 
 /*
@@ -145,22 +146,32 @@ Route::post('/apply-online', [
 ])->name('public.admission.store');
 
 
+Route::get(
+    '/apply-online/vouchers',
+    [
+        PublicAdmissionController::class,
+        'vouchers',
+    ]
+)->name('public.admission.vouchers');
+
 Route::get('/apply-online/voucher/{voucher}', [
     PublicAdmissionController::class,
     'voucher',
 ])->name('public.admission.voucher');
 
 
+
+
 /*
 |--------------------------------------------------------------------------
-| PUBLIC PAYMENT SUBMISSION
+| Authenticated Dashboard Compatibility Route
 |--------------------------------------------------------------------------
 */
 
-Route::post('/payment-submit', [
-    PublicPaymentController::class,
-    'store',
-])->name('public.payment.submit');
+Route::get('/dashboard', function () {
+    return redirect()->route('admin.dashboard');
+})->middleware(['auth'])->name('dashboard');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -257,6 +268,14 @@ Route::middleware(['auth', 'active.user'])
             CourseController::class
         );
 
+
+
+        Route::resource(
+            'fee-deposit-details',
+            FeeDepositDetailController::class
+        )
+            ->except(['show'])
+            ->names('fee-deposit-details');
 
         /*
         |--------------------------------------------------------------------------

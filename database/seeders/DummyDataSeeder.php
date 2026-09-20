@@ -1193,6 +1193,7 @@ class DummyDataSeeder extends Seeder
 
                     'footer_text' =>
                         'Empowering youth through technical and vocational education.',
+                    'hostel_fee' => '12000'
 
                 ];
 
