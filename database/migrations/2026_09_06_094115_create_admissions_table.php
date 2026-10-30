@@ -28,9 +28,9 @@ return new class extends Migration
             $table->date('date_of_birth')->nullable();
 
             $table->enum('gender', [
-                'Male',
-                'Female',
-                'Other',
+                'male',
+                'female',
+                'other',
             ])->nullable();
 
             $table->string('phone', 30);

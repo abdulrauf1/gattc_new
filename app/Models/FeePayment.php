@@ -40,4 +40,12 @@ class FeePayment extends Model
             FeePaymentHistory::class
         );
     }
+
+    public function receipt(): HasMany
+    {
+        return $this->hasMany(
+            FeeReceipt::class
+        );
+    }
+    
 }

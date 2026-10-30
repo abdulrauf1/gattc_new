@@ -28,4 +28,8 @@ class FeeReceipt extends Model
     {
         return $this->belongsTo(User::class, 'issued_by');
     }
+
+    
+
+
 }

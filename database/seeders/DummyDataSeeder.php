@@ -1079,7 +1079,15 @@ class DummyDataSeeder extends Seeder
                             | This is only a seed/demo value.
                             |
                             */
+                            'deposit_slip_no' => 'DS-' . uniqid(),
+                            'bank_transaction_no' => 'BT-' . uniqid(),
                             'payment_slip' => 'payments/dummy-bank-slip.pdf',
+
+                            'amount' =>
+                                DB::table('vouchers')
+                                    ->where('id', $paidVoucherId)
+                                    ->value('amount'),
+                                    
 
                             'payment_date' =>
                                 now()->subDays(9)->toDateString(),

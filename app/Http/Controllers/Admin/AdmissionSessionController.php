@@ -7,6 +7,7 @@ use App\Models\AdmissionSession;
 use App\Models\Course;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class AdmissionSessionController extends Controller
 {
@@ -21,6 +22,9 @@ class AdmissionSessionController extends Controller
             ->withCount('vouchers')
             ->orderByDesc('opening_date')
             ->get();
+
+
+            
 
         return view(
             'admin.admission-sessions.index',
@@ -50,40 +54,69 @@ class AdmissionSessionController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'title' => [
-                'required',
-                'string',
-                'max:255',
-            ],
+       $validated = $request->validate([
 
-            'opening_date' => [
-                'required',
-                'date',
-            ],
+                'title' => [
+                    'required',
+                    'string',
+                    'min:3',
+                    'max:120',
+                ],
 
-            'closing_date' => [
-                'required',
-                'date',
-                'after:opening_date',
-            ],
+                'opening_date' => [
+                    'required',
+                    'date',
+                ],
 
-            'description' => [
-                'nullable',
-                'string',
-            ],
+                'closing_date' => [
+                    'required',
+                    'date',
+                    'after:opening_date',
+                ],
 
-            'courses' => [
-                'nullable',
-                'array',
-            ],
+                'description' => [
+                    'nullable',
+                    'string',
+                    'max:2000',
+                ],
 
-            'courses.*' => [
-                'integer',
-                'exists:courses,id',
-            ],
+                'is_open' => [
+                    'nullable',
+                    'boolean',
+                ],
+
+                'courses' => [
+                    'required',
+                    'array',
+                    'min:1',
+                ],
+
+                'courses.*' => [
+                    'required',
+                    'integer',
+                    'distinct',
+                    Rule::exists('courses', 'id')
+                        ->where(fn ($query) => $query->where('status', true)),
+                ],
+            ], [
+            'title.required' => 'Please enter the session title.',
+            'title.min' => 'The session title must contain at least 3 characters.',
+            'title.max' => 'The session title cannot exceed 120 characters.',
+
+            'opening_date.required' => 'Please select the opening date and time.',
+            'closing_date.required' => 'Please select the closing date and time.',
+            'closing_date.after' => 'The closing date and time must be later than the opening date and time.',
+
+            'description.max' => 'The description cannot exceed 2,000 characters.',
+
+            'courses.required' => 'Select at least one active course.',
+            'courses.array' => 'The course selection is invalid.',
+            'courses.min' => 'Select at least one active course.',
+            'courses.*.exists' => 'One or more selected courses are inactive or no longer available.',
+            'courses.*.distinct' => 'A course cannot be selected more than once.',
         ]);
 
+        
         /*
         |--------------------------------------------------------------------------
         | Create Session
@@ -96,7 +129,7 @@ class AdmissionSessionController extends Controller
             | If this session is created as open, close all other sessions.
             |--------------------------------------------------------------------------
             */
-            if ($request->boolean('is_open')) {
+            if ($validated['is_open']) {
                 AdmissionSession::query()
                     ->where('is_open', true)
                     ->update([
@@ -108,7 +141,7 @@ class AdmissionSessionController extends Controller
                 'title' => $validated['title'],
                 'opening_date' => $validated['opening_date'],
                 'closing_date' => $validated['closing_date'],
-                'is_open' => $request->boolean('is_open'),
+                'is_open' => $validated['is_open'],
                 'description' => $validated['description'] ?? null,
             ]);
 
@@ -196,37 +229,60 @@ class AdmissionSessionController extends Controller
         AdmissionSession $admissionSession
     ) {
         $validated = $request->validate([
-            'title' => [
-                'required',
-                'string',
-                'max:255',
-            ],
+                'title' => [
+                    'required',
+                    'string',
+                    'min:3',
+                    'max:120',
+                ],
 
-            'opening_date' => [
-                'required',
-                'date',
-            ],
+                'opening_date' => [
+                    'required',
+                    'date',
+                ],
 
-            'closing_date' => [
-                'required',
-                'date',
-                'after:opening_date',
-            ],
+                'closing_date' => [
+                    'required',
+                    'date',
+                    'after:opening_date',
+                ],
 
-            'description' => [
-                'nullable',
-                'string',
-            ],
+                'description' => [
+                    'nullable',
+                    'string',
+                    'max:2000',
+                ],
 
-            'courses' => [
-                'nullable',
-                'array',
-            ],
+                'is_open' => [
+                    'nullable',
+                    'boolean',
+                ],
 
-            'courses.*' => [
-                'integer',
-                'exists:courses,id',
-            ],
+                'courses' => [
+                    'required',
+                    'array',
+                    'min:1',
+                ],
+
+                'courses.*' => [
+                    'required',
+                    'integer',
+                    'distinct',
+                    Rule::exists('courses', 'id')
+                        ->where(fn ($query) => $query->where('status', true)),
+                ],
+            ], [
+                'title.required' => 'Please enter the session title.',
+                'title.min' => 'The session title must contain at least 3 characters.',
+                'title.max' => 'The session title cannot exceed 120 characters.',
+                'opening_date.required' => 'Please select an opening date and time.',
+                'closing_date.required' => 'Please select a closing date and time.',
+                'closing_date.after' => 'The closing date and time must be later than the opening date and time.',
+                'description.max' => 'The description cannot exceed 2,000 characters.',
+                'courses.required' => 'Select at least one active course.',
+                'courses.min' => 'Select at least one active course.',
+                'courses.*.exists' => 'One or more selected courses are inactive or unavailable.',
+                'courses.*.distinct' => 'A course cannot be selected more than once.',
         ]);
 
         DB::transaction(function () use (

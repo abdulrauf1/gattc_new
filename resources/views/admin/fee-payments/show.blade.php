@@ -496,6 +496,7 @@
 
                                     <input
                                         type="number"
+                                        readonly
                                         name="amount"
                                         step="0.01"
                                         min="0.01"
@@ -521,35 +522,7 @@
                                 </div>
 
 
-                                {{-- Payment Method --}}
-                                <div>
-
-                                    <label class="form-label">
-                                        Payment Method
-                                    </label>
-
-                                    <select
-                                        name="payment_method"
-                                        class="form-input">
-
-                                        <option value="bank">
-                                            Bank Deposit
-                                        </option>
-
-                                        <option value="cash"
-                                            @selected(
-                                                old(
-                                                    'payment_method',
-                                                    $payment?->payment_method
-                                                ) === 'cash'
-                                            )>
-                                            Cash
-                                        </option>
-
-                                    </select>
-
-                                </div>
-
+                               
 
                                 {{-- Slip Upload --}}
                                 <div class="md:col-span-2">

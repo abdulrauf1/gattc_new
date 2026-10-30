@@ -15,7 +15,13 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
 
+            $table->string('deposit_slip_no')->unique();
+            $table->string('bank_transaction_no')->unique()->nullable();
+
+
             $table->string('payment_slip');
+
+            $table->decimal('amount', 10, 2);
 
             $table->date('payment_date')->nullable();
 

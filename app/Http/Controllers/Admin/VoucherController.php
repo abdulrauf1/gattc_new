@@ -11,6 +11,7 @@ use App\Models\Voucher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class VoucherController extends Controller
 {
@@ -121,82 +122,72 @@ class VoucherController extends Controller
     */
 
     public function create(Request $request)
-    {
-        $type = $request->get('type', 'admission');
+{
+    $type = $request->get('type', 'admission');
 
-        if (!in_array($type, [
-            'admission',
-            'hostel',
-            'readmission'
-        ], true)) {
-            $type = 'admission';
-        }
-
-        $sessions = AdmissionSession::query()
-            ->orderByDesc('opening_date')
-            ->get();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Courses
-        |--------------------------------------------------------------------------
-        |
-        | Load bank account because the course determines where
-        | the student's fee is deposited.
-        |
-        */
-
-        $courses = Course::query()
-            ->with('bankAccount')
-            ->where('status', true)
-            ->orderByRaw("
-                CASE
-                    WHEN course_type = 'regular' THEN 1
-                    WHEN course_type = 'dit' THEN 2
-                    WHEN course_type = 'private' THEN 3
-                    ELSE 4
-                END
-            ")
-            ->orderBy('title')
-            ->get();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Hostel Account
-        |--------------------------------------------------------------------------
-        */
-
-        $hostelAccount = BankAccount::query()
-            ->where('purpose', 'like', '%Hostel%')
-            ->where('status', true)
-            ->first();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Existing Admissions
-        |--------------------------------------------------------------------------
-        */
-
-        $admissions = Admission::query()
-            ->with([
-                'course:id,title',
-                'session:id,title',
-            ])
-            ->latest('id')
-            ->limit(100)
-            ->get();
-
-        return view(
-            'admin.vouchers.create',
-            compact(
-                'type',
-                'sessions',
-                'courses',
-                'hostelAccount',
-                'admissions'
-            )
-        );
+    if (!in_array($type, ['admission', 'hostel', 'readmission'], true)) {
+        $type = 'admission';
     }
+
+    $sessions = AdmissionSession::query()
+        ->where('is_open', true)
+        ->whereDate('closing_date', '>=', today())
+        ->orderByDesc('opening_date')
+        ->get();
+
+    $admissionAvailable = $sessions->isNotEmpty();
+
+    $courses = Course::query()
+        ->with('bankAccount')
+        ->where('status', true)
+        ->orderByRaw("CASE
+            WHEN course_type = 'regular' THEN 1
+            WHEN course_type = 'dit' THEN 2
+            WHEN course_type = 'private' THEN 3
+            ELSE 4
+        END")
+        ->orderBy('title')
+        ->get();
+
+    // Maps each course to the admission-session IDs to which it is assigned.
+    // Used by the Blade view to filter options when the session changes.
+    $sessionCourseIds = DB::table('admission_session_course')
+        ->select('course_id', 'admission_session_id')
+        ->get()
+        ->groupBy('course_id')
+        ->map(function ($rows) {
+            return $rows->pluck('admission_session_id')
+                ->map(fn ($id) => (string) $id)
+                ->values()
+                ->all();
+        })
+        ->all();
+
+    $hostelAccount = BankAccount::query()
+        ->where('purpose', 'like', '%Hostel%')
+        ->where('status', true)
+        ->first();
+
+    $admissions = Admission::query()
+        ->with([
+            'course:id,title',
+            'session:id,title',
+        ])
+        ->latest('id')
+        ->limit(100)
+        ->get();
+
+    return view('admin.vouchers.create', compact(
+        'type',
+        'sessions',
+        'courses',
+        'sessionCourseIds',
+        'hostelAccount',
+        'admissions',
+        'admissionAvailable'
+    ));
+}
+
 
 
     /*
@@ -247,7 +238,7 @@ class VoucherController extends Controller
             ],
 
             'father_name' => [
-                'nullable',
+                'required',
                 'string',
                 'max:255',
             ],
@@ -259,12 +250,12 @@ class VoucherController extends Controller
             ],
 
             'date_of_birth' => [
-                'nullable',
+                'required',
                 'date',
             ],
 
             'gender' => [
-                'nullable',
+                'required',
                 'string',
                 'max:30',
             ],
@@ -276,13 +267,13 @@ class VoucherController extends Controller
             ],
 
             'email' => [
-                'nullable',
+                'required',
                 'email',
                 'max:255',
             ],
 
             'address' => [
-                'nullable',
+                'required',
                 'string',
                 'max:1000',
             ],
@@ -370,6 +361,7 @@ class VoucherController extends Controller
                 'exists:admissions,id',
             ];
         }
+
 
 
         $validated = $request->validate($rules);

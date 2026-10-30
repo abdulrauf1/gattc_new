@@ -238,6 +238,7 @@ class FeePaymentController extends Controller
             'payment.receipt',
         ]);
 
+      
 
         $payment =
             $voucher->payment;
@@ -306,12 +307,6 @@ class FeePaymentController extends Controller
                 'required',
                 'numeric',
                 'min:0.01',
-            ],
-
-            'payment_method' => [
-                'nullable',
-                'string',
-                'max:50',
             ],
 
             'remarks' => [
@@ -461,10 +456,6 @@ class FeePaymentController extends Controller
                         'amount' =>
                             $validated['amount'],
 
-                        'payment_method' =>
-                            $validated['payment_method']
-                            ?? 'bank',
-
                         'payment_slip' =>
                             $slipPath,
 
@@ -527,13 +518,6 @@ class FeePaymentController extends Controller
 
                     'payment_date' =>
                         $validated['payment_date'],
-
-                    'amount' =>
-                        $validated['amount'],
-
-                    'payment_method' =>
-                        $validated['payment_method']
-                        ?? $payment->payment_method,
 
                     'payment_slip' =>
                         $slipPath,
